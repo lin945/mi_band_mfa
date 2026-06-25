@@ -1,6 +1,6 @@
 {
-  "package": "com.application.watch.demo",
-  "name": "mi_band_data",
+  "package": "asia.bilibili.mfa",
+  "name": "MFA Codes",
   "versionName": "1.0.0",
   "versionCode": 1,
   "minPlatformVersion": 1000,

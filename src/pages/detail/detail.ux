@@ -1,26 +1,147 @@
 <template>
-  <div class="demo-page">
-    <text class="title">{{ text }}</text>
+  <div class="page" onswipe="handleSwipe">
+    <div class="content">
+      <text class="issuer">{{ token.issuer }}</text>
+      <text class="account">{{ token.accountName }}</text>
+      <text class="code">{{ token.groupedCode }}</text>
+      <text class="time">{{ token.remaining }} seconds</text>
+      <text class="status">{{ token.status }}</text>
+    </div>
+    <text class="hint">Swipe right to return</text>
   </div>
 </template>
 
 <script>
+import router from "@system.router"
+import { getAccountById, buildTokenState } from "../../common/scripts/totp"
+
 export default {
+  protected: {
+    id: ""
+  },
+
   private: {
-    text: "欢迎打开详情页"
+    account: null,
+    token: {
+      issuer: "",
+      accountName: "",
+      groupedCode: "--- ---",
+      remaining: 30,
+      status: "Ready"
+    },
+    timer: null
+  },
+
+  onInit() {
+    this.account = getAccountById(this.id)
+    this.refreshToken()
+  },
+
+  onShow() {
+    this.refreshToken()
+    this.startTicker()
+  },
+
+  onHide() {
+    this.stopTicker()
+  },
+
+  onDestroy() {
+    this.stopTicker()
+  },
+
+  startTicker() {
+    if (this.timer) {
+      return
+    }
+    this.timer = setInterval(() => {
+      this.refreshToken()
+    }, 1000)
+  },
+
+  stopTicker() {
+    if (!this.timer) {
+      return
+    }
+    clearInterval(this.timer)
+    this.timer = null
+  },
+
+  refreshToken() {
+    const nextToken = buildTokenState(this.account || getAccountById(this.id))
+    this.token.issuer = nextToken.issuer
+    this.token.accountName = nextToken.accountName
+    this.token.groupedCode = nextToken.groupedCode
+    this.token.remaining = nextToken.remaining
+    this.token.status = nextToken.status
+  },
+
+  handleSwipe(event) {
+    if (event.direction === "right") {
+      router.back()
+    }
   }
 }
 </script>
 
 <style>
-.demo-page {
+.page {
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #050505;
+  padding: 18px;
+}
+
+.content {
+  width: 100%;
+  flex: 1;
   flex-direction: column;
   justify-content: center;
   align-items: center;
 }
 
-.title {
-  font-size: 20px;
+.issuer {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.account {
+  margin-top: 8px;
+  color: #9aa3aa;
+  font-size: 13px;
+  text-align: center;
+}
+
+.code {
+  margin-top: 28px;
+  color: #7df7c2;
+  font-size: 42px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.time {
+  margin-top: 22px;
+  color: #ffffff;
+  font-size: 18px;
+  text-align: center;
+}
+
+.status {
+  margin-top: 8px;
+  color: #9aa3aa;
+  font-size: 13px;
+  text-align: center;
+}
+
+.hint {
+  color: #6f7d86;
+  font-size: 11px;
   text-align: center;
 }
 </style>

@@ -1,48 +1,194 @@
 <template>
-  <div class="demo-page">
-    <text class="title">{{ $t("a.b") }},欢迎打开{{ title }}</text>
-    <!-- 点击跳转详情页 -->
-    <input class="btn" type="button" value="跳转到详情页" onclick="routeDetail" />
+  <div class="page">
+    <div class="header">
+      <text class="title">MFA Codes</text>
+      <text class="subtitle">{{ accounts.length }} tokens · local</text>
+    </div>
+
+    <scroll class="token-scroll" scroll-y="true">
+      <div class="token-card" for="{{ accounts }}" tid="id" onclick="openDetail($item.id)">
+        <div class="token-main">
+          <text class="issuer">{{ $item.issuer }}</text>
+          <text class="account">{{ $item.accountName }}</text>
+          <text class="code">{{ $item.groupedCode }}</text>
+        </div>
+        <div class="token-side">
+          <text class="time">{{ $item.remaining }}s</text>
+          <text class="status">{{ $item.status }}</text>
+        </div>
+      </div>
+    </scroll>
+
+    <div class="footer">
+      <text class="hint">Tap a token for large view</text>
+    </div>
   </div>
 </template>
 
 <script>
 import router from "@system.router"
+import { MFA_ACCOUNTS, buildTokenState } from "../../common/scripts/totp"
 
 export default {
-  // 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
   private: {
-    title: "示例页面"
+    accounts: [],
+    timer: null
   },
 
-  routeDetail() {
-    // 跳转到应用内的某个页面，router用法详见：文档->接口->页面路由
+  onInit() {
+    this.accounts = MFA_ACCOUNTS.map(account => buildTokenState(account))
+  },
+
+  onShow() {
+    this.refreshTokens()
+    this.startTicker()
+  },
+
+  onHide() {
+    this.stopTicker()
+  },
+
+  onDestroy() {
+    this.stopTicker()
+  },
+
+  startTicker() {
+    if (this.timer) {
+      return
+    }
+    this.timer = setInterval(() => {
+      this.refreshTokens()
+    }, 1000)
+  },
+
+  stopTicker() {
+    if (!this.timer) {
+      return
+    }
+    clearInterval(this.timer)
+    this.timer = null
+  },
+
+  refreshTokens() {
+    const now = Date.now()
+    for (let index = 0; index < MFA_ACCOUNTS.length; index++) {
+      const nextState = buildTokenState(MFA_ACCOUNTS[index], now)
+      this.accounts[index].code = nextState.code
+      this.accounts[index].groupedCode = nextState.groupedCode
+      this.accounts[index].remaining = nextState.remaining
+      this.accounts[index].progress = nextState.progress
+      this.accounts[index].status = nextState.status
+    }
+  },
+
+  openDetail(id) {
     router.push({
-      uri: "/pages/detail"
+      uri: "/pages/detail",
+      params: {
+        id
+      }
     })
   }
 }
 </script>
 
 <style>
-.demo-page {
+.page {
+  width: 100%;
+  height: 100%;
   flex-direction: column;
-  justify-content: center;
+  background-color: #050505;
+  padding: 16px;
+}
+
+.header {
+  flex-direction: column;
   align-items: center;
+  margin-bottom: 12px;
 }
 
 .title {
-  font-size: 20px;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: bold;
   text-align: center;
 }
 
-.btn {
-  width: 200px;
-  height: 40px;
-  margin-top: 20px;
-  border-radius: 5px;
-  background-color: #09ba07;
-  font-size: 20px;
+.subtitle {
+  margin-top: 4px;
+  color: #9aa3aa;
+  font-size: 12px;
+  text-align: center;
+}
+
+.token-scroll {
+  width: 100%;
+  height: 360px;
+}
+
+.token-card {
+  width: 100%;
+  height: 112px;
+  margin-bottom: 10px;
+  padding: 12px;
+  flex-direction: row;
+  justify-content: space-between;
+  border-radius: 16px;
+  background-color: #152026;
+}
+
+.token-main {
+  flex: 1;
+  flex-direction: column;
+}
+
+.issuer {
   color: #ffffff;
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.account {
+  margin-top: 2px;
+  color: #9aa3aa;
+  font-size: 11px;
+}
+
+.code {
+  margin-top: 10px;
+  color: #7df7c2;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.token-side {
+  width: 52px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.time {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.status {
+  margin-top: 6px;
+  color: #9aa3aa;
+  font-size: 9px;
+  text-align: right;
+}
+
+.footer {
+  align-items: center;
+  padding-top: 8px;
+}
+
+.hint {
+  color: #6f7d86;
+  font-size: 11px;
+  text-align: center;
 }
 </style>
