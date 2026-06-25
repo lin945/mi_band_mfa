@@ -2,10 +2,14 @@
   <div class="page">
     <div class="header">
       <text class="title">MFA Codes</text>
-      <text class="subtitle">{{ accounts.length }} tokens · local</text>
+      <text class="subtitle">{{ accounts.length }} tokens · {{ phoneStatus }}</text>
     </div>
 
     <scroll class="token-scroll" scroll-y="true">
+      <div class="empty-card" show="{{ accounts.length === 0 }}">
+        <text class="empty-title">No tokens</text>
+        <text class="empty-copy">Sync configs from phone</text>
+      </div>
       <div class="token-card" for="{{ accounts }}" tid="id" onclick="openDetail($item.id)">
         <div class="token-main">
           <text class="issuer">{{ $item.issuer }}</text>
@@ -20,23 +24,31 @@
     </scroll>
 
     <div class="footer">
-      <text class="hint">Tap a token for large view</text>
+      <text class="hint">{{ syncStatus }}</text>
     </div>
   </div>
 </template>
 
 <script>
 import router from "@system.router"
-import { MFA_ACCOUNTS, buildTokenState } from "../../common/scripts/totp"
+import interconnect from "@system.interconnect"
+import { buildTokenState } from "../../common/scripts/totp"
+import { loadMfaAccounts, saveMfaAccounts, parseConfigSnapshot } from "../../common/scripts/mfaConfig"
+
+let phoneConnection = null
 
 export default {
   private: {
+    rawAccounts: [],
     accounts: [],
+    phoneStatus: "local",
+    syncStatus: "Waiting for phone sync",
     timer: null
   },
 
   onInit() {
-    this.accounts = MFA_ACCOUNTS.map(account => buildTokenState(account))
+    this.loadAccounts()
+    this.setupPhoneChannel()
   },
 
   onShow() {
@@ -50,6 +62,63 @@ export default {
 
   onDestroy() {
     this.stopTicker()
+  },
+
+  loadAccounts() {
+    loadMfaAccounts(accounts => {
+      this.rawAccounts = accounts
+      this.accounts = accounts.map(account => buildTokenState(account))
+      this.refreshTokens()
+    })
+  },
+
+  setupPhoneChannel() {
+    try {
+      phoneConnection = interconnect.instance()
+      phoneConnection.onopen = () => {
+        this.phoneStatus = "phone connected"
+      }
+      phoneConnection.onclose = () => {
+        this.phoneStatus = "phone disconnected"
+      }
+      phoneConnection.onerror = () => {
+        this.phoneStatus = "phone error"
+      }
+      phoneConnection.onmessage = message => {
+        this.handlePhoneMessage(message)
+      }
+    } catch (error) {
+      this.phoneStatus = "local only"
+    }
+  },
+
+  handlePhoneMessage(message) {
+    const payload = this.extractPayload(message)
+    const snapshot = parseConfigSnapshot(payload)
+    if (!snapshot) {
+      return
+    }
+
+    saveMfaAccounts(snapshot.configs, saved => {
+      this.rawAccounts = snapshot.configs
+      this.accounts = snapshot.configs.map(account => buildTokenState(account))
+      this.refreshTokens()
+      this.phoneStatus = "synced"
+      this.syncStatus = saved ? `Synced ${snapshot.configs.length} tokens` : "Sync received but save failed"
+    })
+  },
+
+  extractPayload(message) {
+    if (!message) {
+      return ""
+    }
+    if (typeof message === "string") {
+      return message
+    }
+    if (message.data) {
+      return message.data
+    }
+    return String(message)
   },
 
   startTicker() {
@@ -71,13 +140,17 @@ export default {
 
   refreshTokens() {
     const now = Date.now()
-    for (let index = 0; index < MFA_ACCOUNTS.length; index++) {
-      const nextState = buildTokenState(MFA_ACCOUNTS[index], now)
-      this.accounts[index].code = nextState.code
-      this.accounts[index].groupedCode = nextState.groupedCode
-      this.accounts[index].remaining = nextState.remaining
-      this.accounts[index].progress = nextState.progress
-      this.accounts[index].status = nextState.status
+    for (let index = 0; index < this.rawAccounts.length; index++) {
+      const nextState = buildTokenState(this.rawAccounts[index], now)
+      if (!this.accounts[index]) {
+        this.accounts[index] = nextState
+      } else {
+        this.accounts[index].code = nextState.code
+        this.accounts[index].groupedCode = nextState.groupedCode
+        this.accounts[index].remaining = nextState.remaining
+        this.accounts[index].progress = nextState.progress
+        this.accounts[index].status = nextState.status
+      }
     }
   },
 
@@ -124,6 +197,29 @@ export default {
 .token-scroll {
   width: 100%;
   height: 360px;
+}
+
+.empty-card {
+  width: 100%;
+  height: 112px;
+  padding: 12px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 16px;
+  background-color: #152026;
+}
+
+.empty-title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.empty-copy {
+  margin-top: 6px;
+  color: #9aa3aa;
+  font-size: 12px;
 }
 
 .token-card {

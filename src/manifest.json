@@ -11,6 +11,12 @@
   "features": [
     {
       "name": "system.router"
+    },
+    {
+      "name": "system.storage"
+    },
+    {
+      "name": "system.interconnect"
     }
   ],
   "config": {

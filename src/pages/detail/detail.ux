@@ -13,7 +13,8 @@
 
 <script>
 import router from "@system.router"
-import { getAccountById, buildTokenState } from "../../common/scripts/totp"
+import { buildTokenState } from "../../common/scripts/totp"
+import { loadMfaAccounts, findAccountById } from "../../common/scripts/mfaConfig"
 
 export default {
   protected: {
@@ -33,8 +34,10 @@ export default {
   },
 
   onInit() {
-    this.account = getAccountById(this.id)
-    this.refreshToken()
+    loadMfaAccounts(accounts => {
+      this.account = findAccountById(accounts, this.id)
+      this.refreshToken()
+    })
   },
 
   onShow() {
@@ -68,7 +71,10 @@ export default {
   },
 
   refreshToken() {
-    const nextToken = buildTokenState(this.account || getAccountById(this.id))
+    if (!this.account) {
+      return
+    }
+    const nextToken = buildTokenState(this.account)
     this.token.issuer = nextToken.issuer
     this.token.accountName = nextToken.accountName
     this.token.groupedCode = nextToken.groupedCode
