@@ -31,6 +31,9 @@
       },
       "pages/detail": {
         "component": "detail"
+      },
+      "pages/copyright": {
+        "component": "copyright"
       }
     }
   }

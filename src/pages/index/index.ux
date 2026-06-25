@@ -2,31 +2,30 @@
   <div class="page">
     <div class="header">
       <text class="title">MFA Codes</text>
-      <text class="subtitle">{{ accounts.length }} tokens · {{ phoneStatus }}</text>
+      <text class="subtitle">{{ accounts.length }} 个 · {{ phoneStatus }}</text>
     </div>
 
-    <div class="empty-card" show="{{ accounts.length === 0 }}">
-      <text class="empty-title">No tokens</text>
-      <text class="empty-copy">Sync configs from phone</text>
+    <div class="empty-card" if="{{ accounts.length === 0 }}">
+      <text class="empty-title">未导入验证码</text>
+      <text class="empty-copy">请在安卓端新增 MFA 配置后同步到手环</text>
     </div>
 
-    <list class="token-list" bounces="true">
+    <list class="token-list" bounces="true" if="{{ accounts.length > 0 }}">
       <list-item class="token-item" for="{{ accounts }}" tid="id" type="token" onclick="openDetail($item.id)">
         <div class="token-card">
-          <div class="token-top">
-            <div class="token-title">
-              <text class="issuer">{{ $item.issuer }}</text>
-              <text class="account">{{ $item.accountName }}</text>
-            </div>
-            <div class="token-time">
-              <text class="time">{{ $item.remaining }}s</text>
-              <text class="status">{{ $item.status }}</text>
-            </div>
-          </div>
-        <div class="token-main">
+          <text class="issuer">{{ $item.issuer }}</text>
+          <text class="account">{{ $item.accountName }}</text>
           <text class="code">{{ $item.groupedCode }}</text>
-          <text class="meta">{{ $item.digits }} digits · {{ $item.period }}s</text>
+          <div class="token-bottom">
+            <text class="meta">{{ $item.digits }}位 · {{ $item.period }}秒</text>
+            <text class="time">{{ $item.remaining }}s</text>
+          </div>
         </div>
+      </list-item>
+      <list-item class="copyright-item" type="copyright" onclick="openCopyright">
+        <div class="copyright-card">
+          <text class="copyright-title">版权与赞助</text>
+          <text class="copyright-copy">查看作者信息</text>
         </div>
       </list-item>
     </list>
@@ -49,8 +48,8 @@ export default {
   private: {
     rawAccounts: [],
     accounts: [],
-    phoneStatus: "local",
-    syncStatus: "Waiting for phone sync",
+    phoneStatus: "本地",
+    syncStatus: "等待安卓端同步",
     timer: null
   },
 
@@ -84,19 +83,19 @@ export default {
     try {
       phoneConnection = interconnect.instance()
       phoneConnection.onopen = () => {
-        this.phoneStatus = "phone connected"
+        this.phoneStatus = "已连接手机"
       }
       phoneConnection.onclose = () => {
-        this.phoneStatus = "phone disconnected"
+        this.phoneStatus = "手机断开"
       }
       phoneConnection.onerror = () => {
-        this.phoneStatus = "phone error"
+        this.phoneStatus = "连接异常"
       }
       phoneConnection.onmessage = message => {
         this.handlePhoneMessage(message)
       }
     } catch (error) {
-      this.phoneStatus = "local only"
+      this.phoneStatus = "仅本地"
     }
   },
 
@@ -111,8 +110,8 @@ export default {
       this.rawAccounts = snapshot.configs
       this.accounts = snapshot.configs.map(account => buildTokenState(account))
       this.refreshTokens()
-      this.phoneStatus = "synced"
-      this.syncStatus = saved ? `Synced ${snapshot.configs.length} tokens` : "Sync received but save failed"
+      this.phoneStatus = "已同步"
+      this.syncStatus = saved ? `已导入 ${snapshot.configs.length} 个验证码` : "已接收配置但保存失败"
     })
   },
 
@@ -158,6 +157,12 @@ export default {
         id
       }
     })
+  },
+
+  openCopyright() {
+    router.push({
+      uri: "/pages/copyright"
+    })
   }
 }
 </script>
@@ -167,141 +172,161 @@ export default {
   width: 100%;
   height: 100%;
   flex-direction: column;
-  background-color: #050505;
-  padding: 14px;
+  align-items: center;
+  background-color: #f7f4e9;
+  padding-top: 14px;
+  padding-bottom: 12px;
 }
 
 .header {
+  width: 86%;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .title {
-  color: #ffffff;
-  font-size: 28px;
+  color: #23322c;
+  font-size: 26px;
   font-weight: bold;
   text-align: center;
 }
 
 .subtitle {
   margin-top: 4px;
-  color: #9aa3aa;
-  font-size: 13px;
+  color: #66736c;
+  font-size: 12px;
   text-align: center;
 }
 
 .token-list {
-  width: 100%;
-  height: 382px;
+  width: 82%;
+  height: 368px;
 }
 
 .empty-card {
-  width: 100%;
-  height: 150px;
-  padding: 16px;
+  width: 82%;
+  height: 132px;
+  padding: 14px;
+  margin-top: 6px;
+  margin-bottom: 8px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border-radius: 24px;
-  background-color: #12211c;
+  border-radius: 22px;
+  background-color: #ffffff;
 }
 
 .empty-title {
-  color: #ffffff;
-  font-size: 22px;
+  color: #23322c;
+  font-size: 20px;
   font-weight: bold;
+  text-align: center;
 }
 
 .empty-copy {
-  margin-top: 6px;
-  color: #9aa3aa;
-  font-size: 14px;
+  margin-top: 8px;
+  color: #66736c;
+  font-size: 12px;
+  text-align: center;
 }
 
 .token-item {
   width: 100%;
-  height: 152px;
+  height: 126px;
 }
 
 .token-card {
   width: 100%;
-  height: 142px;
+  height: 116px;
   margin-bottom: 10px;
-  padding: 14px;
+  padding: 12px;
   flex-direction: column;
-  border-radius: 24px;
-  background-color: #14231d;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  background-color: #ffffff;
 }
 
-.token-top {
-  width: 100%;
+.issuer {
+  color: #23322c;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.account {
+  margin-top: 2px;
+  color: #66736c;
+  font-size: 10px;
+  text-align: center;
+}
+
+.code {
+  margin-top: 8px;
+  color: #0f8f6b;
+  font-size: 34px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.token-bottom {
+  width: 86%;
+  margin-top: 4px;
   flex-direction: row;
   justify-content: space-between;
 }
 
-.token-title {
-  flex: 1;
-  flex-direction: column;
-}
-
-.issuer {
-  color: #ffffff;
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.account {
-  margin-top: 3px;
-  color: #9aa3aa;
-  font-size: 13px;
-}
-
-.token-time {
-  width: 64px;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.token-main {
-  width: 100%;
-  margin-top: 14px;
-  flex-direction: column;
-}
-
-.code {
-  color: #7df7c2;
-  font-size: 38px;
-  font-weight: bold;
-}
-
 .meta {
-  margin-top: 4px;
-  color: #6f7d86;
-  font-size: 12px;
+  color: #7a857f;
+  font-size: 10px;
 }
 
 .time {
-  color: #ffffff;
-  font-size: 22px;
+  color: #42695d;
+  font-size: 11px;
   font-weight: bold;
 }
 
-.status {
+.copyright-item {
+  width: 100%;
+  height: 84px;
+}
+
+.copyright-card {
+  width: 100%;
+  height: 74px;
+  margin-bottom: 10px;
+  padding: 10px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 20px;
+  background-color: #edf6f2;
+}
+
+.copyright-title {
+  color: #23322c;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.copyright-copy {
   margin-top: 4px;
-  color: #9aa3aa;
-  font-size: 9px;
-  text-align: right;
+  color: #66736c;
+  font-size: 11px;
+  text-align: center;
 }
 
 .footer {
+  width: 82%;
   align-items: center;
-  padding-top: 8px;
 }
 
 .hint {
-  color: #6f7d86;
-  font-size: 11px;
+  color: #7a857f;
+  font-size: 10px;
   text-align: center;
 }
 </style>

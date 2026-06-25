@@ -4,24 +4,24 @@
       <text class="issuer">{{ token.issuer }}</text>
       <text class="account">{{ token.accountName }}</text>
       <text class="code">{{ token.groupedCode }}</text>
-      <text class="time">{{ token.remaining }}s remaining</text>
+      <text class="time">剩余 {{ token.remaining }} 秒</text>
     </div>
 
     <div class="detail-card">
       <div class="detail-row">
-        <text class="label">Status</text>
+        <text class="label">状态</text>
         <text class="value">{{ token.status }}</text>
       </div>
       <div class="detail-row">
-        <text class="label">Algorithm</text>
+        <text class="label">算法</text>
         <text class="value">{{ token.algorithm }}</text>
       </div>
       <div class="detail-row">
-        <text class="label">Digits</text>
+        <text class="label">位数</text>
         <text class="value">{{ token.digits }}</text>
       </div>
       <div class="detail-row">
-        <text class="label">Period</text>
+        <text class="label">周期</text>
         <text class="value">{{ token.period }}s</text>
       </div>
       <div class="detail-row">
@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <text class="hint">Swipe right to return</text>
+    <text class="hint">右滑返回</text>
   </div>
 </template>
 
@@ -51,7 +51,7 @@ export default {
       accountName: "",
       groupedCode: "--- ---",
       remaining: 30,
-      status: "Ready",
+      status: "可用",
       period: 30,
       digits: 6,
       algorithm: "SHA1",
@@ -140,53 +140,56 @@ export default {
   height: 100%;
   flex-direction: column;
   align-items: center;
-  background-color: #050505;
-  padding: 16px;
+  background-color: #f7f4e9;
+  padding-top: 22px;
+  padding-bottom: 12px;
 }
 
 .hero {
-  width: 100%;
+  width: 82%;
   flex-direction: column;
   align-items: center;
-  padding-top: 18px;
-  padding-bottom: 18px;
+  padding: 14px;
+  border-radius: 24px;
+  background-color: #ffffff;
 }
 
 .issuer {
-  color: #ffffff;
-  font-size: 28px;
+  color: #23322c;
+  font-size: 24px;
   font-weight: bold;
   text-align: center;
 }
 
 .account {
   margin-top: 6px;
-  color: #9aa3aa;
-  font-size: 15px;
+  color: #66736c;
+  font-size: 13px;
   text-align: center;
 }
 
 .code {
-  margin-top: 24px;
-  color: #7df7c2;
-  font-size: 48px;
+  margin-top: 18px;
+  color: #0f8f6b;
+  font-size: 44px;
   font-weight: bold;
   text-align: center;
 }
 
 .time {
-  margin-top: 14px;
-  color: #ffffff;
-  font-size: 20px;
+  margin-top: 10px;
+  color: #42695d;
+  font-size: 16px;
   text-align: center;
 }
 
 .detail-card {
-  width: 100%;
-  padding: 14px;
+  width: 82%;
+  margin-top: 10px;
+  padding: 12px;
   flex-direction: column;
   border-radius: 22px;
-  background-color: #14231d;
+  background-color: #ffffff;
 }
 
 .detail-row {
@@ -198,20 +201,20 @@ export default {
 }
 
 .label {
-  color: #9aa3aa;
-  font-size: 13px;
+  color: #66736c;
+  font-size: 12px;
 }
 
 .value {
-  color: #ffffff;
-  font-size: 14px;
+  color: #23322c;
+  font-size: 13px;
   text-align: right;
 }
 
 .hint {
   margin-top: 12px;
-  color: #6f7d86;
-  font-size: 12px;
+  color: #7a857f;
+  font-size: 11px;
   text-align: center;
 }
 </style>

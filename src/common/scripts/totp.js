@@ -1,14 +1,13 @@
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
-export const MFA_ACCOUNTS = [
-  {
-    id: "github",
-    issuer: "GitHub",
-    accountName: "alice@example.com",
-    secret: "JBSWY3DPEHPK3PXP",
-    digits: 6,
-    period: 30
-  },
+export const MFA_ACCOUNTS = [  {
+  id: "github",
+  issuer: "GitHub",
+  accountName: "alice@example.com",
+  secret: "JBSWY3DPEHPK3PXP",
+  digits: 6,
+  period: 30
+},
   {
     id: "google",
     issuer: "Google",
@@ -24,8 +23,7 @@ export const MFA_ACCOUNTS = [
     secret: "JBSWY3DPEHPK3PXP",
     digits: 6,
     period: 30
-  }
-]
+  }]
 
 export function getAccountById(id) {
   for (let index = 0; index < MFA_ACCOUNTS.length; index++) {
@@ -33,7 +31,7 @@ export function getAccountById(id) {
       return MFA_ACCOUNTS[index]
     }
   }
-  return MFA_ACCOUNTS[0]
+  return null
 }
 
 export function buildTokenState(account, now) {
@@ -54,7 +52,7 @@ export function buildTokenState(account, now) {
     period,
     digits,
     progress: Math.floor((remaining * 100) / period),
-    status: remaining <= 5 ? "Refreshing soon" : "Ready"
+    status: remaining <= 5 ? "即将刷新" : "可用"
   }
 }
 
