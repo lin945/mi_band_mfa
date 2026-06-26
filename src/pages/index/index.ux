@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="header">
-      <text class="title">MFA Codes</text>
+      <text class="title">BandOTP</text>
       <text class="subtitle">{{ accounts.length }} 个 · {{ phoneStatus }}</text>
     </div>
 
@@ -330,3 +330,4 @@ export default {
   text-align: center;
 }
 </style>
+

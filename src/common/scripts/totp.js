@@ -1,29 +1,6 @@
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
-export const MFA_ACCOUNTS = [  {
-  id: "github",
-  issuer: "GitHub",
-  accountName: "alice@example.com",
-  secret: "JBSWY3DPEHPK3PXP",
-  digits: 6,
-  period: 30
-},
-  {
-    id: "google",
-    issuer: "Google",
-    accountName: "work@example.com",
-    secret: "JBSWY3DPEHPK3PXP",
-    digits: 6,
-    period: 30
-  },
-  {
-    id: "bilibili",
-    issuer: "Bilibili",
-    accountName: "main",
-    secret: "JBSWY3DPEHPK3PXP",
-    digits: 6,
-    period: 30
-  }]
+export const MFA_ACCOUNTS = []
 
 export function getAccountById(id) {
   for (let index = 0; index < MFA_ACCOUNTS.length; index++) {

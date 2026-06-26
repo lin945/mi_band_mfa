@@ -1,6 +1,6 @@
 {
   "package": "asia.bilibili.mfa",
-  "name": "MFA Codes",
+  "name": "腕码",
   "versionName": "1.0.0",
   "versionCode": 1,
   "minPlatformVersion": 1000,
@@ -38,3 +38,4 @@
     }
   }
 }
+

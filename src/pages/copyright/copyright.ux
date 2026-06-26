@@ -2,11 +2,11 @@
   <div class="page" onswipe="handleSwipe">
     <div class="card">
       <text class="title">版权与赞助</text>
-      <text class="line">MFA Codes</text>
+      <text class="line">BandOTP</text>
       <text class="line">作者：林唯心lin945</text>
       <text class="line">版本：1.0.0</text>
       <text class="copy">手机端管理 MFA Secret，手环端离线计算 TOTP 验证码。</text>
-      <text class="copy">赞助二维码请在安卓端版权页查看。</text>
+      <text class="copy">教程及赞助二维码请在安卓端版权页查看。</text>
       <text class="copyright">Copyright 2026</text>
     </div>
     <text class="hint">右滑返回</text>
@@ -81,3 +81,4 @@ export default {
   text-align: center;
 }
 </style>
+
