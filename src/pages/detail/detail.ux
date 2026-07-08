@@ -9,6 +9,10 @@
 
     <div class="detail-card">
       <div class="detail-row">
+        <text class="label">分类</text>
+        <text class="value">{{ token.category }}</text>
+      </div>
+      <div class="detail-row">
         <text class="label">状态</text>
         <text class="value">{{ token.status }}</text>
       </div>
@@ -37,7 +41,7 @@
 <script>
 import router from "@system.router"
 import { buildTokenState } from "../../common/scripts/totp"
-import { loadMfaAccounts, findAccountById } from "../../common/scripts/mfaConfig"
+import { DEFAULT_CATEGORY, loadMfaAccounts, findAccountById } from "../../common/scripts/mfaConfig"
 
 export default {
   protected: {
@@ -51,6 +55,7 @@ export default {
       accountName: "",
       groupedCode: "--- ---",
       remaining: 30,
+      category: DEFAULT_CATEGORY,
       status: "可用",
       period: 30,
       digits: 6,
@@ -107,6 +112,7 @@ export default {
       accountName: nextToken.accountName,
       groupedCode: nextToken.groupedCode,
       remaining: nextToken.remaining,
+      category: this.account.category || DEFAULT_CATEGORY,
       status: nextToken.status,
       period: nextToken.period,
       digits: nextToken.digits,
@@ -141,12 +147,12 @@ export default {
   flex-direction: column;
   align-items: center;
   background-color: #f7f4e9;
-  padding-top: 22px;
-  padding-bottom: 12px;
+  padding-top: 16px;
+  padding-bottom: 10px;
 }
 
 .hero {
-  width: 82%;
+  width: 80%;
   flex-direction: column;
   align-items: center;
   padding: 14px;
@@ -164,14 +170,14 @@ export default {
 .account {
   margin-top: 6px;
   color: #66736c;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
 }
 
 .code {
   margin-top: 18px;
   color: #0f8f6b;
-  font-size: 44px;
+  font-size: 42px;
   font-weight: bold;
   text-align: center;
 }
@@ -179,12 +185,12 @@ export default {
 .time {
   margin-top: 10px;
   color: #42695d;
-  font-size: 16px;
+  font-size: 15px;
   text-align: center;
 }
 
 .detail-card {
-  width: 82%;
+  width: 80%;
   margin-top: 10px;
   padding: 12px;
   flex-direction: column;
@@ -194,7 +200,7 @@ export default {
 
 .detail-row {
   width: 100%;
-  height: 34px;
+  height: 32px;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
@@ -202,19 +208,19 @@ export default {
 
 .label {
   color: #66736c;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .value {
   color: #23322c;
-  font-size: 13px;
+  font-size: 12px;
   text-align: right;
 }
 
 .hint {
-  margin-top: 12px;
+  margin-top: 10px;
   color: #7a857f;
-  font-size: 11px;
+  font-size: 10px;
   text-align: center;
 }
 </style>

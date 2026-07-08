@@ -2,6 +2,7 @@ import storage from "@system.storage"
 import { MFA_ACCOUNTS } from "./totp"
 
 const STORAGE_KEY = "mfa_config_snapshot"
+export const DEFAULT_CATEGORY = "默认分类"
 
 export function loadMfaAccounts(callback) {
   storage.get({
@@ -109,12 +110,18 @@ function normalizeAccount(account) {
     id: String(account.id || `${account.issuer || "issuer"}-${account.accountName || Date.now()}`),
     issuer: String(account.issuer || "Issuer"),
     accountName: String(account.accountName || "Account"),
+    category: normalizeCategory(account.category),
     secret,
     digits: normalizeNumber(account.digits, 6, 6, 8),
     period: normalizeNumber(account.period, 30, 15, 120),
     algorithm: "SHA1",
     updatedAt: account.updatedAt || Date.now()
   }
+}
+
+function normalizeCategory(value) {
+  const normalized = String(value || "").trim()
+  return normalized || DEFAULT_CATEGORY
 }
 
 function normalizeNumber(value, fallback, min, max) {

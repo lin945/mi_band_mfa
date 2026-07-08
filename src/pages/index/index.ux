@@ -1,31 +1,53 @@
 <template>
   <div class="page">
     <div class="header">
-      <text class="title">BandOTP</text>
-      <text class="subtitle">{{ accounts.length }} 个 · {{ phoneStatus }}</text>
+      <text class="title" onclick="openCopyright">BandOTP</text>
+      <text class="subtitle">{{ rawAccounts.length }} 个 · {{ phoneStatus }}</text>
+      <text class="header-hint">点击标题查看版权与赞助</text>
     </div>
 
-    <div class="empty-card" if="{{ accounts.length === 0 }}">
+    <div class="control-card" if="{{ rawAccounts.length > 0 }}">
+      <div class="control-row">
+        <div class="nav-button" onclick="prevCategory">
+          <text class="nav-text"><</text>
+        </div>
+        <div class="control-center">
+          <text class="control-label">分类</text>
+          <text class="control-value">{{ currentCategoryLabel }}</text>
+        </div>
+        <div class="nav-button" onclick="nextCategory">
+          <text class="nav-text">></text>
+        </div>
+      </div>
+      <div class="control-row row-gap">
+        <div class="nav-button page-button" onclick="prevPage">
+          <text class="nav-text"><</text>
+        </div>
+        <div class="control-center">
+          <text class="control-label">分页</text>
+          <text class="control-value">{{ currentPage + 1 }}/{{ totalPages }}</text>
+        </div>
+        <div class="nav-button page-button" onclick="nextPage">
+          <text class="nav-text">></text>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-card" if="{{ rawAccounts.length === 0 }}">
       <text class="empty-title">未导入验证码</text>
       <text class="empty-copy">请在安卓端新增 MFA 配置后同步到手环</text>
     </div>
 
-    <list class="token-list" bounces="true" if="{{ accounts.length > 0 }}">
-      <list-item class="token-item" for="{{ accounts }}" tid="id" type="token" onclick="openDetail($item.id)">
+    <list class="token-list" bounces="true" if="{{ rawAccounts.length > 0 }}">
+      <list-item class="token-item" for="{{ accounts }}" tid="id" type="token-item" onclick="openDetail($item.id)">
         <div class="token-card">
-          <text class="issuer">{{ $item.issuer }}</text>
-          <text class="account">{{ $item.accountName }}</text>
-          <text class="code">{{ $item.groupedCode }}</text>
-          <div class="token-bottom">
-            <text class="meta">{{ $item.digits }}位 · {{ $item.period }}秒</text>
+          <div class="token-head">
+            <text class="issuer">{{ $item.issuer }}</text>
             <text class="time">{{ $item.remaining }}s</text>
           </div>
-        </div>
-      </list-item>
-      <list-item class="copyright-item" type="copyright" onclick="openCopyright">
-        <div class="copyright-card">
-          <text class="copyright-title">版权与赞助</text>
-          <text class="copyright-copy">查看作者信息</text>
+          <text class="account">{{ $item.accountName }}</text>
+          <text class="code">{{ $item.groupedCode }}</text>
+          <text class="meta">{{ $item.digits }}位 · {{ $item.period }}秒 · {{ $item.status }}</text>
         </div>
       </list-item>
     </list>
@@ -40,14 +62,25 @@
 import router from "@system.router"
 import interconnect from "@system.interconnect"
 import { buildTokenState } from "../../common/scripts/totp"
-import { loadMfaAccounts, saveMfaAccounts, parseConfigSnapshot } from "../../common/scripts/mfaConfig"
+import {
+  DEFAULT_CATEGORY,
+  loadMfaAccounts,
+  saveMfaAccounts,
+  parseConfigSnapshot
+} from "../../common/scripts/mfaConfig"
 
+const PAGE_SIZE = 3
 let phoneConnection = null
 
 export default {
   private: {
     rawAccounts: [],
     accounts: [],
+    categories: [],
+    currentCategory: DEFAULT_CATEGORY,
+    currentCategoryLabel: DEFAULT_CATEGORY,
+    currentPage: 0,
+    totalPages: 1,
     phoneStatus: "本地",
     syncStatus: "等待安卓端同步",
     timer: null
@@ -74,8 +107,7 @@ export default {
   loadAccounts() {
     loadMfaAccounts(accounts => {
       this.rawAccounts = accounts
-      this.accounts = accounts.map(account => buildTokenState(account))
-      this.refreshTokens()
+      this.resetVisibleState(this.currentCategory, this.currentPage)
     })
   },
 
@@ -108,10 +140,9 @@ export default {
 
     saveMfaAccounts(snapshot.configs, saved => {
       this.rawAccounts = snapshot.configs
-      this.accounts = snapshot.configs.map(account => buildTokenState(account))
-      this.refreshTokens()
       this.phoneStatus = "已同步"
       this.syncStatus = saved ? `已导入 ${snapshot.configs.length} 个验证码` : "已接收配置但保存失败"
+      this.resetVisibleState(this.currentCategory, 0)
     })
   },
 
@@ -146,8 +177,138 @@ export default {
   },
 
   refreshTokens() {
-    const now = Date.now()
-    this.accounts = this.rawAccounts.map(account => buildTokenState(account, now))
+    this.updateVisiblePage(this.currentPage, Date.now())
+  },
+
+  resetVisibleState(preferredCategory, preferredPage) {
+    this.categories = this.collectCategories(this.rawAccounts)
+    if (this.categories.length === 0) {
+      this.currentCategory = DEFAULT_CATEGORY
+      this.currentCategoryLabel = DEFAULT_CATEGORY
+      this.currentPage = 0
+      this.totalPages = 1
+      this.accounts = []
+      return
+    }
+
+    const nextCategory = this.hasCategory(preferredCategory) ? preferredCategory : this.categories[0]
+    this.currentCategory = nextCategory
+    this.currentCategoryLabel = this.formatCategoryLabel(nextCategory)
+    this.updateVisiblePage(preferredPage, Date.now())
+  },
+
+  collectCategories(accounts) {
+    const categories = []
+    const seen = {}
+    for (let index = 0; index < accounts.length; index++) {
+      const category = accounts[index].category || DEFAULT_CATEGORY
+      if (!seen[category]) {
+        seen[category] = true
+        categories.push(category)
+      }
+    }
+    return categories
+  },
+
+  hasCategory(category) {
+    for (let index = 0; index < this.categories.length; index++) {
+      if (this.categories[index] === category) {
+        return true
+      }
+    }
+    return false
+  },
+
+  getAccountsForCategory(category) {
+    const accounts = []
+    for (let index = 0; index < this.rawAccounts.length; index++) {
+      const account = this.rawAccounts[index]
+      if ((account.category || DEFAULT_CATEGORY) === category) {
+        accounts.push(account)
+      }
+    }
+    return accounts
+  },
+
+  updateVisiblePage(page, now) {
+    const categoryAccounts = this.getAccountsForCategory(this.currentCategory)
+    this.totalPages = Math.max(1, Math.ceil(categoryAccounts.length / PAGE_SIZE))
+
+    let nextPage = Number(page)
+    if (isNaN(nextPage)) {
+      nextPage = 0
+    }
+    if (nextPage < 0) {
+      nextPage = 0
+    }
+    if (nextPage > this.totalPages - 1) {
+      nextPage = this.totalPages - 1
+    }
+
+    this.currentPage = nextPage
+    const start = nextPage * PAGE_SIZE
+    const visibleAccounts = categoryAccounts.slice(start, start + PAGE_SIZE)
+    const currentTime = now || Date.now()
+    this.accounts = visibleAccounts.map(account => buildTokenState(account, currentTime))
+  },
+
+  formatCategoryLabel(category) {
+    if (!category) {
+      return DEFAULT_CATEGORY
+    }
+    return category.length > 8 ? `${category.slice(0, 8)}...` : category
+  },
+
+  prevCategory() {
+    this.switchCategory(-1)
+  },
+
+  nextCategory() {
+    this.switchCategory(1)
+  },
+
+  switchCategory(step) {
+    if (this.categories.length === 0) {
+      return
+    }
+
+    let index = 0
+    for (let cursor = 0; cursor < this.categories.length; cursor++) {
+      if (this.categories[cursor] === this.currentCategory) {
+        index = cursor
+        break
+      }
+    }
+
+    const nextIndex = (index + step + this.categories.length) % this.categories.length
+    const nextCategory = this.categories[nextIndex]
+    this.currentCategory = nextCategory
+    this.currentCategoryLabel = this.formatCategoryLabel(nextCategory)
+    this.updateVisiblePage(0, Date.now())
+  },
+
+  prevPage() {
+    this.switchPage(-1)
+  },
+
+  nextPage() {
+    this.switchPage(1)
+  },
+
+  switchPage(step) {
+    if (this.totalPages <= 1) {
+      this.updateVisiblePage(0, Date.now())
+      return
+    }
+
+    let nextPage = this.currentPage + step
+    if (nextPage < 0) {
+      nextPage = this.totalPages - 1
+    }
+    if (nextPage >= this.totalPages) {
+      nextPage = 0
+    }
+    this.updateVisiblePage(nextPage, Date.now())
   },
 
   openDetail(id) {
@@ -174,42 +335,110 @@ export default {
   flex-direction: column;
   align-items: center;
   background-color: #f7f4e9;
-  padding-top: 14px;
-  padding-bottom: 12px;
+  padding-top: 10px;
+  padding-bottom: 8px;
 }
 
 .header {
-  width: 86%;
+  width: 82%;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .title {
   color: #23322c;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: bold;
   text-align: center;
 }
 
 .subtitle {
-  margin-top: 4px;
+  margin-top: 2px;
   color: #66736c;
-  font-size: 12px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.header-hint {
+  margin-top: 2px;
+  color: #7a857f;
+  font-size: 9px;
+  text-align: center;
+}
+
+.control-card {
+  width: 82%;
+  margin-top: 6px;
+  padding: 10px;
+  flex-direction: column;
+  border-radius: 20px;
+  background-color: #ffffff;
+}
+
+.control-row {
+  width: 100%;
+  height: 30px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.row-gap {
+  margin-top: 8px;
+}
+
+.nav-button {
+  width: 40px;
+  height: 30px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 15px;
+  background-color: #edf6f2;
+}
+
+.page-button {
+  width: 46px;
+}
+
+.nav-text {
+  color: #23322c;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.control-center {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-label {
+  color: #7a857f;
+  font-size: 10px;
+}
+
+.control-value {
+  margin-left: 8px;
+  color: #23322c;
+  font-size: 11px;
+  font-weight: bold;
   text-align: center;
 }
 
 .token-list {
   width: 82%;
-  height: 368px;
+  height: 318px;
+  margin-top: 8px;
 }
 
 .empty-card {
   width: 82%;
-  height: 132px;
+  height: 136px;
   padding: 14px;
-  margin-top: 6px;
-  margin-bottom: 8px;
+  margin-top: 10px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -219,7 +448,7 @@ export default {
 
 .empty-title {
   color: #23322c;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: bold;
   text-align: center;
 }
@@ -227,101 +456,83 @@ export default {
 .empty-copy {
   margin-top: 8px;
   color: #66736c;
-  font-size: 12px;
+  font-size: 11px;
   text-align: center;
 }
 
 .token-item {
   width: 100%;
-  height: 126px;
+  height: 104px;
 }
 
 .token-card {
   width: 100%;
-  height: 116px;
-  margin-bottom: 10px;
-  padding: 12px;
+  height: 96px;
+  padding: 10px 12px;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  border-radius: 22px;
+  border-radius: 20px;
   background-color: #ffffff;
 }
 
-.issuer {
-  color: #23322c;
-  font-size: 18px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.account {
-  margin-top: 2px;
-  color: #66736c;
-  font-size: 10px;
-  text-align: center;
-}
-
-.code {
-  margin-top: 8px;
-  color: #0f8f6b;
-  font-size: 34px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.token-bottom {
-  width: 86%;
-  margin-top: 4px;
+.token-head {
+  width: 100%;
   flex-direction: row;
   justify-content: space-between;
-}
-
-.meta {
-  color: #7a857f;
-  font-size: 10px;
-}
-
-.time {
-  color: #42695d;
-  font-size: 11px;
-  font-weight: bold;
-}
-
-.copyright-item {
-  width: 100%;
-  height: 84px;
-}
-
-.copyright-card {
-  width: 100%;
-  height: 74px;
-  margin-bottom: 10px;
-  padding: 10px;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  border-radius: 20px;
-  background-color: #edf6f2;
 }
 
-.copyright-title {
+.issuer {
+  width: 150px;
   color: #23322c;
   font-size: 16px;
   font-weight: bold;
+  text-align: left;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+
+.time {
+  margin-left: 8px;
+  color: #42695d;
+  font-size: 11px;
+  font-weight: bold;
+  text-align: right;
+}
+
+.account {
+  width: 100%;
+  margin-top: 4px;
+  color: #66736c;
+  font-size: 10px;
+  text-align: left;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+
+.code {
+  width: 100%;
+  margin-top: 6px;
+  color: #0f8f6b;
+  font-size: 28px;
+  font-weight: bold;
   text-align: center;
 }
 
-.copyright-copy {
+.meta {
+  width: 100%;
   margin-top: 4px;
-  color: #66736c;
-  font-size: 11px;
+  color: #7a857f;
+  font-size: 9px;
   text-align: center;
+  lines: 1;
+  text-overflow: ellipsis;
 }
 
 .footer {
   width: 82%;
   align-items: center;
+  padding-top: 6px;
 }
 
 .hint {
@@ -330,4 +541,3 @@ export default {
   text-align: center;
 }
 </style>
-
