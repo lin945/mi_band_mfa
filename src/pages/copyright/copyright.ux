@@ -33,51 +33,51 @@ export default {
   align-items: center;
   justify-content: center;
   background-color: #f7f4e9;
-  padding-top: 22px;
-  padding-bottom: 12px;
+  padding-top: 28px;
+  padding-bottom: 16px;
 }
 
 .card {
   width: 82%;
-  padding: 16px;
+  padding: 22px;
   flex-direction: column;
   align-items: center;
-  border-radius: 24px;
+  border-radius: 28px;
   background-color: #ffffff;
 }
 
 .title {
   color: #23322c;
-  font-size: 24px;
+  font-size: 34px;
   font-weight: bold;
   text-align: center;
 }
 
 .line {
-  margin-top: 10px;
+  margin-top: 14px;
   color: #23322c;
-  font-size: 14px;
+  font-size: 20px;
   text-align: center;
 }
 
 .copy {
-  margin-top: 10px;
+  margin-top: 14px;
   color: #66736c;
-  font-size: 12px;
+  font-size: 18px;
   text-align: center;
 }
 
 .copyright {
-  margin-top: 14px;
+  margin-top: 18px;
   color: #0f8f6b;
-  font-size: 12px;
+  font-size: 18px;
   text-align: center;
 }
 
 .hint {
-  margin-top: 12px;
+  margin-top: 16px;
   color: #7a857f;
-  font-size: 11px;
+  font-size: 16px;
   text-align: center;
 }
 </style>

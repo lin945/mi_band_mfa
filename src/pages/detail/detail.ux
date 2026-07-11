@@ -147,7 +147,7 @@ export default {
   flex-direction: column;
   align-items: center;
   background-color: #f7f4e9;
-  padding-top: 16px;
+  padding-top: 14px;
   padding-bottom: 10px;
 }
 
@@ -156,51 +156,51 @@ export default {
   flex-direction: column;
   align-items: center;
   padding: 14px;
-  border-radius: 24px;
+  border-radius: 26px;
   background-color: #ffffff;
 }
 
 .issuer {
   color: #23322c;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
   text-align: center;
 }
 
 .account {
-  margin-top: 6px;
+  margin-top: 8px;
   color: #66736c;
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
 }
 
 .code {
   margin-top: 18px;
   color: #0f8f6b;
-  font-size: 42px;
+  font-size: 50px;
   font-weight: bold;
   text-align: center;
 }
 
 .time {
-  margin-top: 10px;
+  margin-top: 12px;
   color: #42695d;
-  font-size: 15px;
+  font-size: 18px;
   text-align: center;
 }
 
 .detail-card {
   width: 80%;
-  margin-top: 10px;
+  margin-top: 8px;
   padding: 12px;
   flex-direction: column;
-  border-radius: 22px;
+  border-radius: 24px;
   background-color: #ffffff;
 }
 
 .detail-row {
   width: 100%;
-  height: 32px;
+  height: 38px;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
@@ -208,19 +208,19 @@ export default {
 
 .label {
   color: #66736c;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .value {
   color: #23322c;
-  font-size: 12px;
+  font-size: 14px;
   text-align: right;
 }
 
 .hint {
   margin-top: 10px;
   color: #7a857f;
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
 }
 </style>
