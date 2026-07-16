@@ -2,15 +2,6 @@ const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
 // RFC-compatible Base32 test secret used only as an out-of-the-box display example.
 export const MFA_ACCOUNTS = [
-  {
-    id: "bandotp-demo",
-    issuer: "BandOTP",
-    accountName: "示例验证码",
-    category: "默认分类",
-    secret: "JBSWY3DPEHPK3PXP",
-    digits: 6,
-    period: 30
-  }
 ]
 
 export function getAccountById(id) {
