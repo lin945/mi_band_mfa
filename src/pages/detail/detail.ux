@@ -1,47 +1,70 @@
 <template>
-  <div class="page" onswipe="handleSwipe">
-    <div class="hero">
-      <text class="issuer">{{ token.issuer }}</text>
-      <text class="account">{{ token.accountName }}</text>
-      <text class="code">{{ token.groupedCode }}</text>
-      <text class="time">剩余 {{ token.remaining }} 秒</text>
-    </div>
+  <div class="page" style="background-color: {{ theme.pageBackground }}">
+    <div class="detail-card" style="background-color: {{ theme.cardBackground }}">
+      <div class="hero">
+        <text class="title" style="color: {{ theme.title }}">{{ token.issuer }}</text>
+        <text class="account" style="color: {{ theme.body }}">{{ token.accountName }}</text>
+        <text class="code">{{ token.groupedCode }}</text>
+        <div class="progress-track" style="background-color: {{ theme.progressTrack }}">
+          <div class="progress-fill" style="width: {{ token.progress }}%; background-color: {{ progressColor }}"></div>
+        </div>
+        <text class="countdown" style="color: {{ theme.body }}">剩余 {{ token.remaining }}s</text>
+      </div>
 
-    <div class="detail-card">
-      <div class="detail-row">
-        <text class="label">分类</text>
-        <text class="value">{{ token.category }}</text>
-      </div>
-      <div class="detail-row">
-        <text class="label">状态</text>
-        <text class="value">{{ token.status }}</text>
-      </div>
-      <div class="detail-row">
-        <text class="label">算法</text>
-        <text class="value">{{ token.algorithm }}</text>
-      </div>
-      <div class="detail-row">
-        <text class="label">位数</text>
-        <text class="value">{{ token.digits }}</text>
-      </div>
-      <div class="detail-row">
-        <text class="label">周期</text>
-        <text class="value">{{ token.period }}s</text>
-      </div>
-      <div class="detail-row">
-        <text class="label">Secret</text>
-        <text class="value">{{ token.maskedSecret }}</text>
+      <div class="details">
+        <div class="detail-row">
+          <text class="label" style="color: {{ theme.secondary }}">分类</text>
+          <text class="value" style="color: {{ theme.body }}">{{ token.category }}</text>
+        </div>
+        <div class="detail-row">
+          <text class="label" style="color: {{ theme.secondary }}">状态</text>
+          <text class="value" style="color: {{ theme.body }}">{{ token.status }}</text>
+        </div>
+        <div class="detail-row">
+          <text class="label" style="color: {{ theme.secondary }}">算法</text>
+          <text class="value" style="color: {{ theme.body }}">{{ token.algorithm }}</text>
+        </div>
+        <div class="detail-row">
+          <text class="label" style="color: {{ theme.secondary }}">位数</text>
+          <text class="value" style="color: {{ theme.body }}">{{ token.digits }}</text>
+        </div>
+        <div class="detail-row">
+          <text class="label" style="color: {{ theme.secondary }}">周期</text>
+          <text class="value" style="color: {{ theme.body }}">{{ token.period }}s</text>
+        </div>
+        <div class="detail-row">
+          <text class="label" style="color: {{ theme.secondary }}">Secret</text>
+          <text class="value" style="color: {{ theme.body }}">{{ token.maskedSecret }}</text>
+        </div>
       </div>
     </div>
-
-    <text class="hint">右滑返回</text>
   </div>
 </template>
 
 <script>
-import router from "@system.router"
 import { buildTokenState } from "../../common/scripts/totp"
 import { DEFAULT_CATEGORY, loadMfaAccounts, findAccountById } from "../../common/scripts/mfaConfig"
+import storage from "@system.storage"
+
+const THEME_STORAGE_KEY = "bandotp_dark_mode"
+
+const LIGHT_THEME = {
+  pageBackground: "#F7F5F2",
+  cardBackground: "#FFFFFF",
+  title: "#263238",
+  body: "#455A64",
+  secondary: "#90A4AE",
+  progressTrack: "#E7ECEE"
+}
+
+const DARK_THEME = {
+  pageBackground: "#101716",
+  cardBackground: "#1B2523",
+  title: "#EDF5F1",
+  body: "#C5D2CD",
+  secondary: "#90A4AE",
+  progressTrack: "#34413E"
+}
 
 export default {
   protected: {
@@ -55,6 +78,7 @@ export default {
       accountName: "",
       groupedCode: "--- ---",
       remaining: 30,
+      progress: 100,
       category: DEFAULT_CATEGORY,
       status: "可用",
       period: 30,
@@ -62,13 +86,29 @@ export default {
       algorithm: "SHA1",
       maskedSecret: "----"
     },
+    progressColor: "#0F8C6C",
+    theme: LIGHT_THEME,
     timer: null
   },
 
   onInit() {
+    this.loadTheme()
     loadMfaAccounts(accounts => {
       this.account = findAccountById(accounts, this.id)
       this.refreshToken()
+    })
+  },
+
+  loadTheme() {
+    storage.get({
+      key: THEME_STORAGE_KEY,
+      default: "false",
+      success: data => {
+        this.theme = data === "true" ? DARK_THEME : LIGHT_THEME
+      },
+      fail: () => {
+        this.theme = LIGHT_THEME
+      }
     })
   },
 
@@ -112,6 +152,7 @@ export default {
       accountName: nextToken.accountName,
       groupedCode: nextToken.groupedCode,
       remaining: nextToken.remaining,
+      progress: nextToken.progress,
       category: this.account.category || DEFAULT_CATEGORY,
       status: nextToken.status,
       period: nextToken.period,
@@ -119,6 +160,17 @@ export default {
       algorithm: this.account.algorithm || "SHA1",
       maskedSecret: this.maskSecret(this.account.secret)
     }
+    this.progressColor = this.getProgressColor(nextToken.remaining)
+  },
+
+  getProgressColor(remaining) {
+    if (remaining < 2) {
+      return "#D84315"
+    }
+    if (remaining < 5) {
+      return "#F57C00"
+    }
+    return "#0F8C6C"
   },
 
   maskSecret(secret) {
@@ -130,12 +182,6 @@ export default {
       return "********"
     }
     return `${value.slice(0, 4)}...${value.slice(value.length - 4)}`
-  },
-
-  handleSwipe(event) {
-    if (event.direction === "right") {
-      router.back()
-    }
   }
 }
 </script>
@@ -144,83 +190,112 @@ export default {
 .page {
   width: 100%;
   height: 100%;
+  padding: 16px 18px 22px;
   flex-direction: column;
   align-items: center;
-  background-color: #f7f4e9;
-  padding-top: 14px;
-  padding-bottom: 10px;
+  background-color: #f7f5f2;
 }
 
-.hero {
-  width: 80%;
+.detail-card {
+  width: 100%;
+  padding: 20px;
   flex-direction: column;
-  align-items: center;
-  padding: 14px;
-  border-radius: 26px;
+  border-radius: 28px;
   background-color: #ffffff;
 }
 
-.issuer {
-  color: #23322c;
-  font-size: 28px;
+.hero {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  width: 100%;
+  color: #263238;
+  font-size: 20px;
   font-weight: bold;
   text-align: center;
+  lines: 1;
+  text-overflow: ellipsis;
 }
 
 .account {
-  margin-top: 8px;
-  color: #66736c;
-  font-size: 14px;
+  width: 100%;
+  margin-top: 4px;
+  color: #455a64;
+  font-size: 15px;
   text-align: center;
+  lines: 1;
+  text-overflow: ellipsis;
 }
 
 .code {
-  margin-top: 18px;
-  color: #0f8f6b;
-  font-size: 50px;
+  width: 100%;
+  margin-top: 16px;
+  color: #0f8c6c;
+  font-size: 58px;
   font-weight: bold;
   text-align: center;
+  lines: 1;
+  text-overflow: clip;
+  opacity: 1;
+  transition-property: opacity;
+  transition-duration: 160ms;
+  transition-timing-function: ease-out;
 }
 
-.time {
-  margin-top: 12px;
-  color: #42695d;
+.progress-track {
+  width: 76%;
+  height: 4px;
+  margin-top: 14px;
+  border-radius: 2px;
+  background-color: #e7ecee;
+}
+
+.progress-fill {
+  height: 4px;
+  border-radius: 2px;
+  transition-property: width, background-color;
+  transition-duration: 1000ms;
+  transition-timing-function: linear;
+}
+
+.countdown {
+  margin-top: 8px;
+  color: #455a64;
   font-size: 18px;
   text-align: center;
 }
 
-.detail-card {
-  width: 80%;
-  margin-top: 8px;
-  padding: 12px;
+.details {
+  width: 100%;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top-width: 1px;
+  border-top-color: #e7ecee;
   flex-direction: column;
-  border-radius: 24px;
-  background-color: #ffffff;
 }
 
 .detail-row {
   width: 100%;
-  height: 38px;
+  height: 31px;
   flex-direction: row;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
 .label {
-  color: #66736c;
-  font-size: 14px;
+  color: #90a4ae;
+  font-size: 15px;
 }
 
 .value {
-  color: #23322c;
-  font-size: 14px;
+  width: 60%;
+  color: #455a64;
+  font-size: 15px;
   text-align: right;
-}
-
-.hint {
-  margin-top: 10px;
-  color: #7a857f;
-  font-size: 12px;
-  text-align: center;
+  lines: 1;
+  text-overflow: ellipsis;
 }
 </style>

@@ -1,66 +1,42 @@
 <template>
-  <div class="page">
-    <div class="header">
-      <text class="title" onclick="openCopyright">BandOTP</text>
-      <text class="subtitle">{{ rawAccounts.length }} 个 · {{ phoneStatus }}</text>
-      <text class="header-hint">点击标题查看版权与赞助</text>
-    </div>
-
-    <div class="control-card" if="{{ rawAccounts.length > 0 }}">
-      <div class="control-row">
-        <div class="nav-button" onclick="prevCategory">
-          <text class="nav-text"><</text>
-        </div>
-        <div class="control-center">
-          <text class="control-label">分类</text>
-          <text class="control-value">{{ currentCategoryLabel }}</text>
-        </div>
-        <div class="nav-button" onclick="nextCategory">
-          <text class="nav-text">></text>
-        </div>
-      </div>
-      <div class="control-row row-gap">
-        <div class="nav-button page-button" onclick="prevPage">
-          <text class="nav-text"><</text>
-        </div>
-        <div class="control-center">
-          <text class="control-label">分页</text>
-          <text class="control-value">{{ currentPage + 1 }}/{{ totalPages }}</text>
-        </div>
-        <div class="nav-button page-button" onclick="nextPage">
-          <text class="nav-text">></text>
-        </div>
-      </div>
-    </div>
-
-    <div class="empty-card" if="{{ rawAccounts.length === 0 }}">
-      <text class="empty-title">未导入验证码</text>
-      <text class="empty-copy">请在安卓端新增 MFA 配置后同步到手环</text>
-    </div>
-
-    <list class="token-list" bounces="true" if="{{ rawAccounts.length > 0 }}">
-      <list-item class="token-item" for="{{ accounts }}" tid="id" type="token-item" onclick="openDetail($item.id)">
-        <div class="token-card">
-          <div class="token-head">
-            <text class="issuer">{{ $item.issuer }}</text>
-            <text class="time">{{ $item.remaining }}s</text>
+  <div class="page" onswipe="handleSwipe" style="background-color: {{ theme.pageBackground }}">
+    <div class="otp-card" if="{{ rawAccounts.length > 0 }}" style="background-color: {{ theme.cardBackground }}">
+      <div class="card-header">
+        <div class="header-row">
+          <text class="title" style="color: {{ theme.title }}">BandOTP</text>
+          <div class="menu-button" onclick="openMenu" style="background-color: {{ theme.buttonBackground }}">
+            <text class="menu-button-text" style="color: {{ theme.action }}">菜单</text>
           </div>
-          <text class="account">{{ $item.accountName }}</text>
-          <text class="code">{{ $item.groupedCode }}</text>
-          <text class="meta">{{ $item.digits }}位 · {{ $item.period }}秒 · {{ $item.status }}</text>
         </div>
-      </list-item>
-    </list>
+        <text class="category" style="color: {{ theme.secondary }}">{{ currentCategoryLabel }}</text>
+      </div>
 
-    <div class="footer">
-      <text class="hint">{{ syncStatus }}</text>
+      <div class="otp-content" onclick="openDetail(currentToken.id)">
+        <text class="issuer" style="color: {{ theme.title }}">{{ currentToken.issuer }}</text>
+        <text class="account" style="color: {{ theme.body }}">{{ currentToken.accountName }}</text>
+        <text class="code">{{ currentToken.groupedCode }}</text>
+        <div class="progress-track" style="background-color: {{ theme.progressTrack }}">
+          <div class="progress-fill" style="width: {{ currentToken.progress }}%; background-color: {{ progressColor }}"></div>
+        </div>
+        <text class="countdown" style="color: {{ theme.body }}">剩余 {{ currentToken.remaining }}s</text>
+      </div>
+
+      <text class="page-indicator" style="color: {{ theme.secondary }}">{{ currentIndex + 1 }} / {{ currentAccounts.length }}</text>
     </div>
+
+    <div class="empty-card" if="{{ rawAccounts.length === 0 }}" style="background-color: {{ theme.cardBackground }}">
+      <text class="title" style="color: {{ theme.title }}">BandOTP</text>
+      <text class="empty-title" style="color: {{ theme.title }}">未导入验证码</text>
+      <text class="empty-copy" style="color: {{ theme.secondary }}">请在安卓端同步 MFA 配置</text>
+    </div>
+
   </div>
 </template>
 
 <script>
 import router from "@system.router"
 import interconnect from "@system.interconnect"
+import storage from "@system.storage"
 import { buildTokenState } from "../../common/scripts/totp"
 import {
   DEFAULT_CATEGORY,
@@ -69,30 +45,66 @@ import {
   parseConfigSnapshot
 } from "../../common/scripts/mfaConfig"
 
-const PAGE_SIZE = 3
 let phoneConnection = null
+const THEME_STORAGE_KEY = "bandotp_dark_mode"
+const CATEGORY_STORAGE_KEY = "bandotp_category"
+
+const LIGHT_THEME = {
+  pageBackground: "#F7F5F2",
+  cardBackground: "#FFFFFF",
+  title: "#263238",
+  body: "#455A64",
+  secondary: "#90A4AE",
+  action: "#0F8C6C",
+  progressTrack: "#E7ECEE",
+  buttonBackground: "#EAF4F0",
+  divider: "#E7ECEE"
+}
+
+const DARK_THEME = {
+  pageBackground: "#101716",
+  cardBackground: "#1B2523",
+  title: "#EDF5F1",
+  body: "#C5D2CD",
+  secondary: "#90A4AE",
+  action: "#6ED5B7",
+  progressTrack: "#34413E",
+  buttonBackground: "#273631",
+  divider: "#34413E"
+}
 
 export default {
   private: {
     rawAccounts: [],
-    accounts: [],
+    currentAccounts: [],
     categories: [],
+    currentToken: {
+      id: "",
+      issuer: "",
+      accountName: "",
+      groupedCode: "--- ---",
+      remaining: 30,
+      progress: 100
+    },
+    currentIndex: 0,
     currentCategory: DEFAULT_CATEGORY,
     currentCategoryLabel: DEFAULT_CATEGORY,
-    currentPage: 0,
-    totalPages: 1,
-    phoneStatus: "本地",
-    syncStatus: "等待安卓端同步",
+    progressColor: "#0F8C6C",
+    isDarkMode: false,
+    themeAction: "夜间",
+    theme: LIGHT_THEME,
     timer: null
   },
 
   onInit() {
     this.loadAccounts()
+    this.loadTheme()
+    this.loadCategory()
     this.setupPhoneChannel()
   },
 
   onShow() {
-    this.refreshTokens()
+    this.refreshToken()
     this.startTicker()
   },
 
@@ -107,43 +119,28 @@ export default {
   loadAccounts() {
     loadMfaAccounts(accounts => {
       this.rawAccounts = accounts
-      this.resetVisibleState(this.currentCategory, this.currentPage)
+      this.currentIndex = 0
+      this.resetCategory()
     })
   },
 
   setupPhoneChannel() {
     try {
       phoneConnection = interconnect.instance()
-      phoneConnection.onopen = () => {
-        this.phoneStatus = "已连接手机"
-      }
-      phoneConnection.onclose = () => {
-        this.phoneStatus = "手机断开"
-      }
-      phoneConnection.onerror = () => {
-        this.phoneStatus = "连接异常"
-      }
       phoneConnection.onmessage = message => {
-        this.handlePhoneMessage(message)
+        const snapshot = parseConfigSnapshot(this.extractPayload(message))
+        if (!snapshot) {
+          return
+        }
+        saveMfaAccounts(snapshot.configs, () => {
+          this.rawAccounts = snapshot.configs
+          this.currentIndex = 0
+          this.resetCategory()
+        })
       }
     } catch (error) {
-      this.phoneStatus = "仅本地"
+      phoneConnection = null
     }
-  },
-
-  handlePhoneMessage(message) {
-    const payload = this.extractPayload(message)
-    const snapshot = parseConfigSnapshot(payload)
-    if (!snapshot) {
-      return
-    }
-
-    saveMfaAccounts(snapshot.configs, saved => {
-      this.rawAccounts = snapshot.configs
-      this.phoneStatus = "已同步"
-      this.syncStatus = saved ? `已导入 ${snapshot.configs.length} 个验证码` : "已接收配置但保存失败"
-      this.resetVisibleState(this.currentCategory, 0)
-    })
   },
 
   extractPayload(message) {
@@ -153,10 +150,46 @@ export default {
     if (typeof message === "string") {
       return message
     }
-    if (message.data) {
-      return message.data
-    }
-    return String(message)
+    return message.data || String(message)
+  },
+
+  loadTheme() {
+    storage.get({
+      key: THEME_STORAGE_KEY,
+      default: "false",
+      success: data => {
+        this.applyTheme(data === "true")
+      },
+      fail: () => {
+        this.applyTheme(false)
+      }
+    })
+  },
+
+  applyTheme(isDarkMode) {
+    this.isDarkMode = isDarkMode
+    this.theme = isDarkMode ? DARK_THEME : LIGHT_THEME
+    this.themeAction = isDarkMode ? "日间" : "夜间"
+  },
+
+  loadCategory() {
+    storage.get({
+      key: CATEGORY_STORAGE_KEY,
+      default: DEFAULT_CATEGORY,
+      success: category => {
+        this.currentCategory = category || DEFAULT_CATEGORY
+        this.resetCategory()
+      }
+    })
+  },
+
+  toggleTheme() {
+    const nextDarkMode = !this.isDarkMode
+    this.applyTheme(nextDarkMode)
+    storage.set({
+      key: THEME_STORAGE_KEY,
+      value: String(nextDarkMode)
+    })
   },
 
   startTicker() {
@@ -164,7 +197,7 @@ export default {
       return
     }
     this.timer = setInterval(() => {
-      this.refreshTokens()
+      this.refreshToken()
     }, 1000)
   },
 
@@ -176,32 +209,73 @@ export default {
     this.timer = null
   },
 
-  refreshTokens() {
-    this.updateVisiblePage(this.currentPage, Date.now())
-  },
-
-  resetVisibleState(preferredCategory, preferredPage) {
-    this.categories = this.collectCategories(this.rawAccounts)
-    if (this.categories.length === 0) {
-      this.currentCategory = DEFAULT_CATEGORY
-      this.currentCategoryLabel = DEFAULT_CATEGORY
-      this.currentPage = 0
-      this.totalPages = 1
-      this.accounts = []
+  refreshToken() {
+    if (this.currentAccounts.length === 0) {
       return
     }
-
-    const nextCategory = this.hasCategory(preferredCategory) ? preferredCategory : this.categories[0]
-    this.currentCategory = nextCategory
-    this.currentCategoryLabel = this.formatCategoryLabel(nextCategory)
-    this.updateVisiblePage(preferredPage, Date.now())
+    if (this.currentIndex >= this.currentAccounts.length) {
+      this.currentIndex = 0
+    }
+    const account = this.currentAccounts[this.currentIndex]
+    const token = buildTokenState(account)
+    this.currentToken = token
+    this.currentCategoryLabel = account.category || DEFAULT_CATEGORY
+    this.progressColor = this.getProgressColor(token.remaining)
   },
 
-  collectCategories(accounts) {
+  getProgressColor(remaining) {
+    if (remaining < 2) {
+      return "#D84315"
+    }
+    if (remaining < 5) {
+      return "#F57C00"
+    }
+    return "#0F8C6C"
+  },
+
+  handleSwipe(event) {
+    if (!event || this.currentAccounts.length < 2) {
+      return
+    }
+    if (event.direction === "up") {
+      this.switchToken(1)
+    } else if (event.direction === "down") {
+      this.switchToken(-1)
+    }
+  },
+
+  switchToken(step) {
+    const total = this.currentAccounts.length
+    this.currentIndex = (this.currentIndex + step + total) % total
+    this.refreshToken()
+  },
+
+  openDetail(id) {
+    router.push({
+      uri: "/pages/detail",
+      params: { id }
+    })
+  },
+
+  resetCategory() {
+    this.categories = this.collectCategories()
+    if (this.categories.length === 0) {
+      this.currentAccounts = []
+      return
+    }
+    if (!this.hasCategory(this.currentCategory)) {
+      this.currentCategory = this.categories[0]
+    }
+    this.currentCategoryLabel = this.currentCategory
+    this.currentAccounts = this.getAccountsForCategory(this.currentCategory)
+    this.refreshToken()
+  },
+
+  collectCategories() {
     const categories = []
     const seen = {}
-    for (let index = 0; index < accounts.length; index++) {
-      const category = accounts[index].category || DEFAULT_CATEGORY
+    for (let index = 0; index < this.rawAccounts.length; index++) {
+      const category = this.rawAccounts[index].category || DEFAULT_CATEGORY
       if (!seen[category]) {
         seen[category] = true
         categories.push(category)
@@ -211,119 +285,32 @@ export default {
   },
 
   hasCategory(category) {
-    for (let index = 0; index < this.categories.length; index++) {
-      if (this.categories[index] === category) {
-        return true
-      }
-    }
-    return false
+    return this.categories.indexOf(category) >= 0
   },
 
   getAccountsForCategory(category) {
-    const accounts = []
-    for (let index = 0; index < this.rawAccounts.length; index++) {
-      const account = this.rawAccounts[index]
-      if ((account.category || DEFAULT_CATEGORY) === category) {
-        accounts.push(account)
-      }
-    }
-    return accounts
+    return this.rawAccounts.filter(account => (account.category || DEFAULT_CATEGORY) === category)
   },
 
-  updateVisiblePage(page, now) {
-    const categoryAccounts = this.getAccountsForCategory(this.currentCategory)
-    this.totalPages = Math.max(1, Math.ceil(categoryAccounts.length / PAGE_SIZE))
-
-    let nextPage = Number(page)
-    if (isNaN(nextPage)) {
-      nextPage = 0
-    }
-    if (nextPage < 0) {
-      nextPage = 0
-    }
-    if (nextPage > this.totalPages - 1) {
-      nextPage = this.totalPages - 1
-    }
-
-    this.currentPage = nextPage
-    const start = nextPage * PAGE_SIZE
-    const visibleAccounts = categoryAccounts.slice(start, start + PAGE_SIZE)
-    const currentTime = now || Date.now()
-    this.accounts = visibleAccounts.map(account => buildTokenState(account, currentTime))
-  },
-
-  formatCategoryLabel(category) {
-    if (!category) {
-      return DEFAULT_CATEGORY
-    }
-    return category.length > 8 ? `${category.slice(0, 8)}...` : category
-  },
-
-  prevCategory() {
-    this.switchCategory(-1)
-  },
-
-  nextCategory() {
-    this.switchCategory(1)
-  },
-
-  switchCategory(step) {
+  switchCategory() {
     if (this.categories.length === 0) {
       return
     }
-
-    let index = 0
-    for (let cursor = 0; cursor < this.categories.length; cursor++) {
-      if (this.categories[cursor] === this.currentCategory) {
-        index = cursor
-        break
-      }
-    }
-
-    const nextIndex = (index + step + this.categories.length) % this.categories.length
-    const nextCategory = this.categories[nextIndex]
-    this.currentCategory = nextCategory
-    this.currentCategoryLabel = this.formatCategoryLabel(nextCategory)
-    this.updateVisiblePage(0, Date.now())
+    router.push({ uri: "/pages/menu" })
   },
 
-  prevPage() {
-    this.switchPage(-1)
-  },
-
-  nextPage() {
-    this.switchPage(1)
-  },
-
-  switchPage(step) {
-    if (this.totalPages <= 1) {
-      this.updateVisiblePage(0, Date.now())
-      return
-    }
-
-    let nextPage = this.currentPage + step
-    if (nextPage < 0) {
-      nextPage = this.totalPages - 1
-    }
-    if (nextPage >= this.totalPages) {
-      nextPage = 0
-    }
-    this.updateVisiblePage(nextPage, Date.now())
-  },
-
-  openDetail(id) {
-    router.push({
-      uri: "/pages/detail",
-      params: {
-        id
-      }
-    })
+  openMenu() {
+    router.push({ uri: "/pages/menu" })
   },
 
   openCopyright() {
     router.push({
       uri: "/pages/copyright"
     })
+  },
+
+  exitApp() {
+    this.$app.exit()
   }
 }
 </script>
@@ -332,212 +319,233 @@ export default {
 .page {
   width: 100%;
   height: 100%;
+  padding: 16px 18px 22px;
   flex-direction: column;
   align-items: center;
-  background-color: #f7f4e9;
-  padding-top: 10px;
-  padding-bottom: 8px;
+  justify-content: center;
+  background-color: #f7f5f2;
 }
 
-.header {
-  width: 82%;
+.otp-card,
+.empty-card {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
   flex-direction: column;
+  border-radius: 28px;
+  background-color: #ffffff;
+}
+
+.card-header {
+  width: 100%;
+  flex-direction: column;
+}
+
+.header-row {
+  width: 100%;
+  flex-direction: row;
   align-items: center;
-  margin-bottom: 5px;
+  justify-content: space-between;
+}
+
+.menu-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-button-text {
+  font-size: 15px;
+  font-weight: bold;
+  text-align: center;
 }
 
 .title {
-  color: #23322c;
-  font-size: 28px;
+  color: #263238;
+  font-size: 32px;
   font-weight: bold;
-  text-align: center;
+  text-align: left;
 }
 
-.subtitle {
-  margin-top: 3px;
-  color: #66736c;
-  font-size: 13px;
-  text-align: center;
-}
-
-.header-hint {
-  margin-top: 3px;
-  color: #7a857f;
-  font-size: 11px;
-  text-align: center;
-}
-
-.control-card {
-  width: 82%;
-  margin-top: 6px;
-  padding: 12px;
-  flex-direction: column;
-  border-radius: 22px;
-  background-color: #ffffff;
-}
-
-.control-row {
-  width: 100%;
-  height: 36px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.row-gap {
-  margin-top: 8px;
-}
-
-.nav-button {
-  width: 46px;
-  height: 36px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 18px;
-  background-color: #edf6f2;
-}
-
-.page-button {
-  width: 52px;
-}
-
-.nav-text {
-  color: #23322c;
-  font-size: 22px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.control-center {
-  flex: 1;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-}
-
-.control-label {
-  color: #7a857f;
-  font-size: 14px;
-}
-
-.control-value {
-  margin-left: 10px;
-  color: #23322c;
-  font-size: 14px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.token-list {
-  width: 82%;
-  height: 270px;
-  margin-top: 8px;
-}
-
-.empty-card {
-  width: 82%;
-  flex: 1;
-  margin-top: 8px;
-  padding: 16px;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  border-radius: 24px;
-  background-color: #ffffff;
-}
-
-.empty-title {
-  color: #23322c;
-  font-size: 22px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.empty-copy {
-  margin-top: 10px;
-  color: #66736c;
-  font-size: 14px;
-  text-align: center;
-}
-
-.token-item {
-  width: 100%;
-  height: 120px;
-}
-
-.token-card {
-  width: 100%;
-  height: 112px;
-  padding: 10px 14px;
-  flex-direction: column;
-  justify-content: flex-start;
-  border-radius: 22px;
-  background-color: #ffffff;
-}
-
-.token-head {
-  width: 100%;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.issuer {
-  width: 150px;
-  color: #23322c;
-  font-size: 20px;
-  font-weight: bold;
+.category {
+  margin-top: 4px;
+  color: #90a4ae;
+  font-size: 15px;
   text-align: left;
   lines: 1;
   text-overflow: ellipsis;
 }
 
-.time {
-  margin-left: 8px;
-  color: #42695d;
-  font-size: 13px;
+.otp-content {
+  flex: 1;
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.issuer {
+  width: 100%;
+  color: #263238;
+  font-size: 20px;
   font-weight: bold;
-  text-align: right;
+  text-align: center;
+  lines: 1;
+  text-overflow: ellipsis;
 }
 
 .account {
   width: 100%;
-  margin-top: 3px;
-  color: #66736c;
-  font-size: 13px;
-  text-align: left;
+  margin-top: 4px;
+  color: #455a64;
+  font-size: 15px;
+  text-align: center;
   lines: 1;
   text-overflow: ellipsis;
 }
 
 .code {
   width: 100%;
-  margin-top: 5px;
-  color: #0f8f6b;
-  font-size: 36px;
+  margin-top: 14px;
+  color: #0f8c6c;
+  font-size: 60px;
+  font-weight: bold;
+  text-align: center;
+  lines: 1;
+  text-overflow: clip;
+  opacity: 1;
+  transition-property: opacity;
+  transition-duration: 160ms;
+  transition-timing-function: ease-out;
+}
+
+.progress-track {
+  width: 76%;
+  height: 4px;
+  margin-top: 16px;
+  border-radius: 2px;
+  background-color: #e7ecee;
+}
+
+.progress-fill {
+  height: 4px;
+  border-radius: 2px;
+  transition-property: width, background-color;
+  transition-duration: 1000ms;
+  transition-timing-function: linear;
+}
+
+.countdown {
+  margin-top: 10px;
+  color: #455a64;
+  font-size: 18px;
+  text-align: center;
+}
+
+.page-indicator {
+  width: 100%;
+  color: #90a4ae;
+  font-size: 20px;
   font-weight: bold;
   text-align: center;
 }
 
-.meta {
-  width: 100%;
-  margin-top: 3px;
-  color: #7a857f;
-  font-size: 12px;
+.empty-card {
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-title {
+  margin-top: 24px;
+  color: #263238;
+  font-size: 20px;
+  font-weight: bold;
   text-align: center;
+}
+
+.empty-copy {
+  margin-top: 8px;
+  color: #90a4ae;
+  font-size: 15px;
+  text-align: center;
+}
+
+.menu-backdrop {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu {
+  width: 88%;
+  padding: 14px;
+  flex-direction: column;
+  border-radius: 24px;
+}
+
+.menu-header {
+  width: 100%;
+  height: 52px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-title {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.close-button {
+  width: 54px;
+  height: 52px;
+  padding-top: 16px;
+  font-size: 15px;
+  text-align: right;
+}
+
+.menu-list {
+  width: 100%;
+  flex-direction: column;
+}
+
+.menu-item {
+  width: 100%;
+  height: 56px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border-radius: 16px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-label {
+  width: 58%;
+  font-size: 18px;
+  text-align: left;
   lines: 1;
   text-overflow: ellipsis;
 }
 
-.footer {
-  width: 82%;
-  align-items: center;
-  padding-top: 6px;
+.menu-value {
+  width: 42%;
+  font-size: 16px;
+  text-align: right;
+  lines: 1;
+  text-overflow: ellipsis;
 }
 
-.hint {
-  color: #7a857f;
-  font-size: 13px;
-  text-align: center;
+.exit-item {
+  color: #d84315;
+  font-size: 17px;
+  font-weight: bold;
 }
+
 </style>

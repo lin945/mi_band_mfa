@@ -32,10 +32,15 @@
       "pages/detail": {
         "component": "detail"
       },
+      "pages/menu": {
+        "component": "menu"
+      },
+      "pages/category": {
+        "component": "category"
+      },
       "pages/copyright": {
         "component": "copyright"
       }
     }
   }
 }
-
