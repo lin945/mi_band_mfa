@@ -1,7 +1,7 @@
 {
   "package": "asia.bilibili.mfa",
   "name": "腕码",
-  "versionName": "1.1.0",
+  "versionName": "1.1.1",
   "versionCode": 1,
   "minPlatformVersion": 1000,
   "icon": "/common/logo.png",
