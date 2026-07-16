@@ -25,9 +25,16 @@
     </div>
 
     <div class="empty-card" if="{{ rawAccounts.length === 0 }}" style="background-color: {{ theme.cardBackground }}">
-      <text class="title" style="color: {{ theme.title }}">BandOTP</text>
-      <text class="empty-title" style="color: {{ theme.title }}">未导入验证码</text>
-      <text class="empty-copy" style="color: {{ theme.secondary }}">请在安卓端同步 MFA 配置</text>
+      <div class="header-row">
+        <text class="title" style="color: {{ theme.title }}">BandOTP</text>
+        <div class="menu-button" onclick="openMenu" style="background-color: {{ theme.buttonBackground }}">
+          <text class="menu-button-text" style="color: {{ theme.action }}">菜单</text>
+        </div>
+      </div>
+      <div class="empty-content">
+        <text class="empty-title" style="color: {{ theme.title }}">未导入验证码</text>
+        <text class="empty-copy" style="color: {{ theme.secondary }}">请在安卓端同步 MFA 配置</text>
+      </div>
     </div>
 
   </div>
@@ -333,7 +340,7 @@ export default {
 .page {
   width: 100%;
   height: 100%;
-  padding: 16px 18px 22px;
+  padding: 10px 12px 14px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -344,7 +351,7 @@ export default {
 .empty-card {
   width: 100%;
   height: 100%;
-  padding: 20px;
+  padding: 14px;
   flex-direction: column;
   border-radius: 28px;
   background-color: #ffffff;
@@ -363,24 +370,27 @@ export default {
 }
 
 .menu-button {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   align-items: center;
   justify-content: center;
 }
 
 .menu-button-text {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: bold;
   text-align: center;
 }
 
 .title {
   color: #263238;
-  font-size: 32px;
+  flex: 1;
+  font-size: 24px;
   font-weight: bold;
   text-align: left;
+  lines: 1;
+  text-overflow: ellipsis;
 }
 
 .category {
@@ -467,14 +477,20 @@ export default {
 }
 
 .empty-card {
+  flex-direction: column;
+}
+
+.empty-content {
+  flex: 1;
+  width: 100%;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
 .empty-title {
-  margin-top: 24px;
   color: #263238;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
   text-align: center;
 }
@@ -482,7 +498,7 @@ export default {
 .empty-copy {
   margin-top: 8px;
   color: #90a4ae;
-  font-size: 15px;
+  font-size: 14px;
   text-align: center;
 }
 
