@@ -104,7 +104,21 @@ export default {
   },
 
   onShow() {
-    this.refreshToken()
+    storage.get({
+      key: CATEGORY_STORAGE_KEY,
+      default: DEFAULT_CATEGORY,
+      success: category => {
+        this.currentCategory = category || DEFAULT_CATEGORY
+        if (this.rawAccounts.length > 0) {
+          this.resetCategory()
+        } else {
+          this.refreshToken()
+        }
+      },
+      fail: () => {
+        this.refreshToken()
+      }
+    })
     this.startTicker()
   },
 
