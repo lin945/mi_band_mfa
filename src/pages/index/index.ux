@@ -14,7 +14,8 @@
       <div class="otp-content" onclick="openDetail(currentToken.id)">
         <text class="issuer" style="color: {{ theme.title }}">{{ currentToken.issuer }}</text>
         <text class="account" style="color: {{ theme.body }}">{{ currentToken.accountName }}</text>
-        <text class="code">{{ currentToken.groupedCode }}</text>
+        <text class="code code-spaced">{{ currentToken.groupedCode }}</text>
+        <text class="code code-compact">{{ currentToken.code }}</text>
         <div class="progress-track" style="background-color: {{ theme.progressTrack }}">
           <div class="progress-fill" style="width: {{ currentToken.progress }}%; background-color: {{ progressColor }}"></div>
         </div>
@@ -69,8 +70,8 @@ const LIGHT_THEME = {
 }
 
 const DARK_THEME = {
-  pageBackground: "#101716",
-  cardBackground: "#1B2523",
+  pageBackground: "#000000",
+  cardBackground: "#000000",
   title: "#EDF5F1",
   body: "#C5D2CD",
   secondary: "#90A4AE",
@@ -504,6 +505,89 @@ export default {
   color: #90a4ae;
   font-size: 14px;
   text-align: center;
+}
+
+.code-compact {
+  display: none;
+}
+
+@media (max-width: 120) {
+  .page {
+    padding: 0;
+  }
+
+  .otp-card,
+  .empty-card {
+    width: 88%;
+    padding: 6px;
+    border-radius: 24px;
+  }
+
+  .header-row {
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .title {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    font-size: 16px;
+    text-align: center;
+  }
+
+  .menu-button {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    margin-top: 5px;
+    border-radius: 10px;
+  }
+
+  .menu-button-text {
+    font-size: 12px;
+  }
+
+  .category {
+    margin-top: 5px;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .issuer {
+    font-size: 16px;
+  }
+
+  .account {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+
+  .code-spaced {
+    display: none;
+  }
+
+  .code-compact {
+    display: flex;
+    margin-top: 10px;
+    font-size: 32px;
+    letter-spacing: 0px;
+  }
+
+  .progress-track {
+    width: 72%;
+    margin-top: 11px;
+  }
+
+  .countdown {
+    margin-top: 7px;
+    font-size: 15px;
+  }
+
+  .page-indicator {
+    font-size: 17px;
+  }
 }
 
 .menu-backdrop {

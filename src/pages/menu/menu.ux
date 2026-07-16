@@ -44,8 +44,8 @@ const LIGHT_THEME = {
 }
 
 const DARK_THEME = {
-  pageBackground: "#101716",
-  cardBackground: "#1B2523",
+  pageBackground: "#000000",
+  cardBackground: "#000000",
   title: "#EDF5F1",
   secondary: "#90A4AE",
   exitBackground: "#3A2620"

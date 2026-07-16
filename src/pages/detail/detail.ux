@@ -4,7 +4,8 @@
       <div class="hero">
         <text class="title" style="color: {{ theme.title }}">{{ token.issuer }}</text>
         <text class="account" style="color: {{ theme.body }}">{{ token.accountName }}</text>
-        <text class="code">{{ token.groupedCode }}</text>
+        <text class="code code-spaced">{{ token.groupedCode }}</text>
+        <text class="code code-compact">{{ token.code }}</text>
         <div class="progress-track" style="background-color: {{ theme.progressTrack }}">
           <div class="progress-fill" style="width: {{ token.progress }}%; background-color: {{ progressColor }}"></div>
         </div>
@@ -58,8 +59,8 @@ const LIGHT_THEME = {
 }
 
 const DARK_THEME = {
-  pageBackground: "#101716",
-  cardBackground: "#1B2523",
+  pageBackground: "#000000",
+  cardBackground: "#000000",
   title: "#EDF5F1",
   body: "#C5D2CD",
   secondary: "#90A4AE",
@@ -77,6 +78,7 @@ export default {
       issuer: "",
       accountName: "",
       groupedCode: "--- ---",
+      code: "------",
       remaining: 30,
       progress: 100,
       category: DEFAULT_CATEGORY,
@@ -151,6 +153,7 @@ export default {
       issuer: nextToken.issuer,
       accountName: nextToken.accountName,
       groupedCode: nextToken.groupedCode,
+      code: nextToken.code,
       remaining: nextToken.remaining,
       progress: nextToken.progress,
       category: this.account.category || DEFAULT_CATEGORY,
@@ -297,5 +300,70 @@ export default {
   text-align: right;
   lines: 1;
   text-overflow: ellipsis;
+}
+
+.code-compact {
+  display: none;
+}
+
+@media (max-width: 120) {
+  .page {
+    padding: 0;
+    justify-content: center;
+  }
+
+  .detail-card {
+    width: 88%;
+    height: auto;
+    flex: 1;
+    padding: 8px;
+    border-radius: 24px;
+    justify-content: center;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .account {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+
+  .code-spaced {
+    display: none;
+  }
+
+  .code-compact {
+    display: flex;
+    margin-top: 18px;
+    font-size: 32px;
+    letter-spacing: 0px;
+  }
+
+  .progress-track {
+    width: 72%;
+    margin-top: 10px;
+  }
+
+  .countdown {
+    margin-top: 7px;
+    font-size: 15px;
+  }
+
+  .details {
+    margin-top: 22px;
+    padding-top: 8px;
+    border-top-width: 0;
+  }
+
+  .detail-row {
+    height: 27px;
+  }
+
+  .label,
+  .value {
+    font-size: 13px;
+  }
 }
 </style>
