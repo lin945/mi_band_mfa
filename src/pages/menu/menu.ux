@@ -1,0 +1,202 @@
+<template>
+  <div class="page" onswipe="handleSwipe" style="background-color: {{ theme.pageBackground }}">
+    <div class="header">
+      <text class="title" style="color: {{ theme.title }}">菜单</text>
+      <text class="hint" style="color: {{ theme.secondary }}">选择一项操作</text>
+    </div>
+
+    <div class="option-list">
+      <div class="option" onclick="openCategory" style="background-color: {{ theme.cardBackground }}">
+        <text class="option-title" style="color: {{ theme.title }}">分类</text>
+        <text class="option-value" style="color: {{ theme.secondary }}">{{ currentCategory }}</text>
+      </div>
+      <div class="option" onclick="openCopyright" style="background-color: {{ theme.cardBackground }}">
+        <text class="option-title" style="color: {{ theme.title }}">应用介绍与版权</text>
+        <text class="option-value" style="color: {{ theme.secondary }}">查看详情</text>
+      </div>
+      <div class="option" onclick="toggleTheme" style="background-color: {{ theme.cardBackground }}">
+        <text class="option-title" style="color: {{ theme.title }}">显示模式</text>
+        <text class="option-value" style="color: {{ theme.secondary }}">切换至{{ themeAction }}</text>
+      </div>
+      <div class="option exit-option" onclick="exitApp" style="background-color: {{ theme.exitBackground }}">
+        <text class="option-title exit-text">退出应用</text>
+        <text class="option-value exit-text">关闭 BandOTP</text>
+      </div>
+    </div>
+
+    <text class="back-hint" style="color: {{ theme.secondary }}">右滑返回</text>
+  </div>
+</template>
+
+<script>
+import router from "@system.router"
+import storage from "@system.storage"
+
+const THEME_STORAGE_KEY = "bandotp_dark_mode"
+const CATEGORY_STORAGE_KEY = "bandotp_category"
+
+const LIGHT_THEME = {
+  pageBackground: "#F7F5F2",
+  cardBackground: "#FFFFFF",
+  title: "#263238",
+  secondary: "#90A4AE",
+  exitBackground: "#FFF1EC"
+}
+
+const DARK_THEME = {
+  pageBackground: "#101716",
+  cardBackground: "#1B2523",
+  title: "#EDF5F1",
+  secondary: "#90A4AE",
+  exitBackground: "#3A2620"
+}
+
+export default {
+  private: {
+    currentCategory: "默认分类",
+    isDarkMode: false,
+    themeAction: "夜间",
+    theme: LIGHT_THEME
+  },
+
+  onInit() {
+    this.loadSettings()
+  },
+
+  onShow() {
+    storage.get({
+      key: CATEGORY_STORAGE_KEY,
+      default: "默认分类",
+      success: data => {
+        this.currentCategory = data || "默认分类"
+      }
+    })
+  },
+
+  loadSettings() {
+    storage.get({
+      key: THEME_STORAGE_KEY,
+      default: "false",
+      success: data => {
+        this.applyTheme(data === "true")
+      },
+      fail: () => {
+        this.applyTheme(false)
+      }
+    })
+    storage.get({
+      key: CATEGORY_STORAGE_KEY,
+      default: "默认分类",
+      success: data => {
+        this.currentCategory = data || "默认分类"
+      }
+    })
+  },
+
+  applyTheme(isDarkMode) {
+    this.isDarkMode = isDarkMode
+    this.theme = isDarkMode ? DARK_THEME : LIGHT_THEME
+    this.themeAction = isDarkMode ? "日间" : "夜间"
+  },
+
+  toggleTheme() {
+    const nextDarkMode = !this.isDarkMode
+    this.applyTheme(nextDarkMode)
+    storage.set({
+      key: THEME_STORAGE_KEY,
+      value: String(nextDarkMode)
+    })
+  },
+
+  openCategory() {
+    router.push({
+      uri: "/pages/category"
+    })
+  },
+
+  openCopyright() {
+    router.push({
+      uri: "/pages/copyright"
+    })
+  },
+
+  exitApp() {
+    this.$app.exit()
+  },
+
+  handleSwipe(event) {
+    if (event.direction === "right") {
+      router.back()
+    }
+  }
+}
+</script>
+
+<style>
+.page {
+  width: 100%;
+  height: 100%;
+  padding: 22px 18px 18px;
+  flex-direction: column;
+}
+
+.header {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  font-size: 30px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.hint {
+  margin-top: 5px;
+  font-size: 15px;
+  text-align: center;
+}
+
+.option-list {
+  flex: 1;
+  width: 100%;
+  margin-top: 18px;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.option {
+  width: 100%;
+  height: 62px;
+  margin-top: 10px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.option-title {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: left;
+}
+
+.option-value {
+  margin-top: 3px;
+  font-size: 14px;
+  text-align: left;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+
+.exit-text {
+  color: #D84315;
+}
+
+.back-hint {
+  margin-top: 12px;
+  font-size: 14px;
+  text-align: center;
+}
+</style>
