@@ -255,10 +255,14 @@ export default {
   },
 
   handleSwipe(event) {
-    if (!event || this.currentAccounts.length < 2) {
+    if (!event) {
       return
     }
-    if (event.direction === "up") {
+    if (event.direction === "left" || event.direction === "right") {
+      this.$app.exit()
+    } else if (this.currentAccounts.length < 2) {
+      return
+    } else if (event.direction === "up") {
       this.switchToken(1)
     } else if (event.direction === "down") {
       this.switchToken(-1)
