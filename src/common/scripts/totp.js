@@ -27,8 +27,11 @@ export function buildTokenState(account, now) {
   const period = account.period || 30
   const digits = account.digits || 6
   const code = generateTotp(account.secret, timestamp, period, digits)
-  const epochSeconds = Math.floor(timestamp / 1000)
-  const remaining = period - (epochSeconds % period)
+  const periodMilliseconds = period * 1000
+  const elapsedMilliseconds = timestamp % periodMilliseconds
+  const remainingMilliseconds = periodMilliseconds - elapsedMilliseconds
+  const remaining = Math.ceil(remainingMilliseconds / 1000)
+  const progress = Math.round((remainingMilliseconds * 100) / periodMilliseconds)
 
   return {
     id: account.id,
@@ -39,7 +42,7 @@ export function buildTokenState(account, now) {
     remaining,
     period,
     digits,
-    progress: Math.ceil((remaining * 100) / period),
+    progress,
     status: remaining <= 5 ? "即将刷新" : "可用"
   }
 }
