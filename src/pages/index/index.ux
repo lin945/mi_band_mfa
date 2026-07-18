@@ -11,7 +11,7 @@
         <text class="category" style="color: {{ theme.secondary }}">{{ currentCategoryLabel }}</text>
       </div>
 
-      <div class="otp-content" onclick="openDetail(currentToken.id)">
+      <div class="otp-single" if="{{ layoutMode === '1' }}" onclick="openDetail(currentToken.id)">
         <text class="issuer" style="color: {{ theme.title }}">{{ currentToken.issuer }}</text>
         <text class="account" style="color: {{ theme.body }}">{{ currentToken.accountName }}</text>
         <text class="code code-spaced">{{ currentToken.groupedCode }}</text>
@@ -20,6 +20,34 @@
           <div class="progress-fill" style="width: {{ currentToken.progress }}%; background-color: {{ progressColor }}"></div>
         </div>
         <text class="countdown" style="color: {{ theme.body }}">剩余 {{ currentToken.remaining }}s</text>
+      </div>
+
+      <div class="otp-dual" if="{{ layoutMode === '2' }}">
+        <div class="otp-dual-item" onclick="openDetail(currentToken.id)">
+          <div class="dual-info-row">
+            <text class="dual-issuer" style="color: {{ theme.title }}">{{ currentToken.issuer }}</text>
+            <text class="dual-account" style="color: {{ theme.body }}">{{ currentToken.accountName }}</text>
+          </div>
+          <text class="dual-code">{{ currentToken.groupedCode }}</text>
+          <text class="dual-code-compact">{{ currentToken.code }}</text>
+          <div class="dual-progress" style="background-color: {{ theme.progressTrack }}">
+            <div class="dual-progress-fill" style="width: {{ currentToken.progress }}%; background-color: {{ progressColor }}"></div>
+          </div>
+          <text class="dual-countdown" style="color: {{ theme.body }}">{{ currentToken.remaining }}s</text>
+        </div>
+        <div class="dual-divider" if="{{ currentAccounts.length > 1 }}" style="background-color: {{ theme.divider }}"></div>
+        <div class="otp-dual-item" if="{{ currentAccounts.length > 1 }}" onclick="openDetail(nextToken.id)">
+          <div class="dual-info-row">
+            <text class="dual-issuer" style="color: {{ theme.title }}">{{ nextToken.issuer }}</text>
+            <text class="dual-account" style="color: {{ theme.body }}">{{ nextToken.accountName }}</text>
+          </div>
+          <text class="dual-code">{{ nextToken.groupedCode }}</text>
+          <text class="dual-code-compact">{{ nextToken.code }}</text>
+          <div class="dual-progress" style="background-color: {{ theme.progressTrack }}">
+            <div class="dual-progress-fill" style="width: {{ nextToken.progress }}%; background-color: {{ nextProgressColor }}"></div>
+          </div>
+          <text class="dual-countdown" style="color: {{ theme.body }}">{{ nextToken.remaining }}s</text>
+        </div>
       </div>
 
       <text class="page-indicator" style="color: {{ theme.secondary }}">{{ currentIndex + 1 }} / {{ currentAccounts.length }}</text>
@@ -56,6 +84,7 @@ import {
 let phoneConnection = null
 const THEME_STORAGE_KEY = "bandotp_dark_mode"
 const CATEGORY_STORAGE_KEY = "bandotp_category"
+const LAYOUT_STORAGE_KEY = "bandotp_layout_mode"
 
 const LIGHT_THEME = {
   pageBackground: "#F7F5F2",
@@ -94,10 +123,20 @@ export default {
       remaining: 30,
       progress: 100
     },
+    nextToken: {
+      id: "",
+      issuer: "",
+      accountName: "",
+      groupedCode: "--- ---",
+      remaining: 30,
+      progress: 100
+    },
     currentIndex: 0,
     currentCategory: DEFAULT_CATEGORY,
     currentCategoryLabel: DEFAULT_CATEGORY,
     progressColor: "#0F8C6C",
+    nextProgressColor: "#0F8C6C",
+    layoutMode: "1",
     isDarkMode: false,
     themeAction: "夜间",
     theme: LIGHT_THEME,
@@ -108,6 +147,7 @@ export default {
     this.loadAccounts()
     this.loadTheme()
     this.loadCategory()
+    this.loadLayout()
     this.setupPhoneChannel()
   },
 
@@ -117,13 +157,28 @@ export default {
       default: "false",
       success: data => {
         this.applyTheme(data === "true")
-        this.loadCategoryForShow()
+        this.loadLayoutForShow()
       },
       fail: () => {
-        this.loadCategoryForShow()
+        this.loadLayoutForShow()
       }
     })
     this.startTicker()
+  },
+
+  loadLayoutForShow() {
+    storage.get({
+      key: LAYOUT_STORAGE_KEY,
+      default: "1",
+      success: data => {
+        this.layoutMode = data || "1"
+        this.loadCategoryForShow()
+      },
+      fail: () => {
+        this.layoutMode = "1"
+        this.loadCategoryForShow()
+      }
+    })
   },
 
   loadCategoryForShow() {
@@ -202,6 +257,19 @@ export default {
     })
   },
 
+  loadLayout() {
+    storage.get({
+      key: LAYOUT_STORAGE_KEY,
+      default: "1",
+      success: data => {
+        this.layoutMode = data || "1"
+      },
+      fail: () => {
+        this.layoutMode = "1"
+      }
+    })
+  },
+
   applyTheme(isDarkMode) {
     this.isDarkMode = isDarkMode
     this.theme = isDarkMode ? DARK_THEME : LIGHT_THEME
@@ -257,6 +325,14 @@ export default {
     this.currentToken = token
     this.currentCategoryLabel = account.category || DEFAULT_CATEGORY
     this.progressColor = this.getProgressColor(token.remaining)
+
+    if (this.layoutMode === "2" && this.currentAccounts.length > 1) {
+      const nextIndex = (this.currentIndex + 1) % this.currentAccounts.length
+      const nextAccount = this.currentAccounts[nextIndex]
+      const next = buildTokenState(nextAccount)
+      this.nextToken = next
+      this.nextProgressColor = this.getProgressColor(next.remaining)
+    }
   },
 
   getProgressColor(remaining) {
@@ -421,12 +497,94 @@ export default {
   text-overflow: ellipsis;
 }
 
-.otp-content {
+.otp-single {
   flex: 1;
   width: 100%;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.otp-dual {
+  flex: 1;
+  width: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.otp-dual-item {
+  flex: 1;
+  width: 100%;
+  padding: 10px 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.dual-divider {
+  width: 80%;
+  height: 1px;
+  margin: 4px auto;
+}
+
+.dual-info-row {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dual-issuer {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+
+.dual-account {
+  margin-top: 3px;
+  font-size: 14px;
+  text-align: center;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+
+.dual-code {
+  width: 100%;
+  margin-top: 10px;
+  color: #0f8c6c;
+  font-size: 48px;
+  font-weight: bold;
+  text-align: center;
+  lines: 1;
+  text-overflow: clip;
+}
+
+.dual-code-compact {
+  display: none;
+}
+
+.dual-progress {
+  width: 68%;
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background-color: #e7ecee;
+}
+
+.dual-progress-fill {
+  height: 4px;
+  border-radius: 2px;
+  transition-property: width, background-color;
+  transition-duration: 1000ms;
+  transition-timing-function: linear;
+}
+
+.dual-countdown {
+  margin-top: 6px;
+  font-size: 16px;
+  text-align: center;
 }
 
 .issuer {
@@ -525,6 +683,10 @@ export default {
   display: none;
 }
 
+.dual-code-compact {
+  display: none;
+}
+
 @media (max-width: 120) {
   .page {
     padding: 0;
@@ -601,6 +763,43 @@ export default {
 
   .page-indicator {
     font-size: 17px;
+  }
+
+  .dual-issuer {
+    font-size: 13px;
+  }
+
+  .dual-account {
+    font-size: 10px;
+  }
+
+  .dual-code {
+    display: none;
+  }
+
+  .dual-code-compact {
+    display: flex;
+    margin-top: 5px;
+    font-size: 22px;
+  }
+
+  .dual-progress {
+    width: 56%;
+    margin-top: 5px;
+    height: 2px;
+  }
+
+  .dual-progress-fill {
+    height: 2px;
+  }
+
+  .dual-countdown {
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  .otp-dual-item {
+    padding: 4px 0;
   }
 }
 

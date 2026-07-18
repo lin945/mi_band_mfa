@@ -14,6 +14,10 @@
         <text class="option-title" style="color: {{ theme.title }}">应用介绍与版权</text>
         <text class="option-value" style="color: {{ theme.secondary }}">查看详情</text>
       </div>
+      <div class="option" onclick="toggleLayout" style="background-color: {{ theme.cardBackground }}">
+        <text class="option-title" style="color: {{ theme.title }}">首页布局</text>
+        <text class="option-value" style="color: {{ theme.secondary }}">{{ layoutAction }}</text>
+      </div>
       <div class="option" onclick="toggleTheme" style="background-color: {{ theme.cardBackground }}">
         <text class="option-title" style="color: {{ theme.title }}">显示模式</text>
         <text class="option-value" style="color: {{ theme.secondary }}">切换至{{ themeAction }}</text>
@@ -34,6 +38,7 @@ import storage from "@system.storage"
 
 const THEME_STORAGE_KEY = "bandotp_dark_mode"
 const CATEGORY_STORAGE_KEY = "bandotp_category"
+const LAYOUT_STORAGE_KEY = "bandotp_layout_mode"
 
 const LIGHT_THEME = {
   pageBackground: "#F7F5F2",
@@ -56,6 +61,8 @@ export default {
     currentCategory: "默认分类",
     isDarkMode: false,
     themeAction: "夜间",
+    layoutMode: "1",
+    layoutAction: "双卡",
     theme: LIGHT_THEME
   },
 
@@ -91,12 +98,36 @@ export default {
         this.currentCategory = data || "默认分类"
       }
     })
+    storage.get({
+      key: LAYOUT_STORAGE_KEY,
+      default: "1",
+      success: data => {
+        this.applyLayout(data || "1")
+      },
+      fail: () => {
+        this.applyLayout("1")
+      }
+    })
   },
 
   applyTheme(isDarkMode) {
     this.isDarkMode = isDarkMode
     this.theme = isDarkMode ? DARK_THEME : LIGHT_THEME
     this.themeAction = isDarkMode ? "日间" : "夜间"
+  },
+
+  applyLayout(mode) {
+    this.layoutMode = mode
+    this.layoutAction = mode === "1" ? "双卡" : "单卡"
+  },
+
+  toggleLayout() {
+    const nextMode = this.layoutMode === "1" ? "2" : "1"
+    this.applyLayout(nextMode)
+    storage.set({
+      key: LAYOUT_STORAGE_KEY,
+      value: nextMode
+    })
   },
 
   toggleTheme() {
