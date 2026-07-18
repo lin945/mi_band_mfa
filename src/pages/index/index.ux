@@ -113,6 +113,21 @@ export default {
 
   onShow() {
     storage.get({
+      key: THEME_STORAGE_KEY,
+      default: "false",
+      success: data => {
+        this.applyTheme(data === "true")
+        this.loadCategoryForShow()
+      },
+      fail: () => {
+        this.loadCategoryForShow()
+      }
+    })
+    this.startTicker()
+  },
+
+  loadCategoryForShow() {
+    storage.get({
       key: CATEGORY_STORAGE_KEY,
       default: DEFAULT_CATEGORY,
       success: category => {
@@ -127,7 +142,6 @@ export default {
         this.refreshToken()
       }
     })
-    this.startTicker()
   },
 
   onHide() {
