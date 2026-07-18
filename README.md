@@ -32,6 +32,11 @@ BandOTP（应用名：腕码）是一个运行在小米手表上的 TOTP（Time-
 - 手机断开后，已同步的验证码仍可离线使用。
 
 ## 使用方法
+从AstroBox下载
+
+<a href="https://astrobox.online/open?source=res&res=asia.bilibili.mfa&provider=official" target="_blank" rel="noopener noreferrer">
+  <img src="https://astrobox.online/goab/en/white.svg">
+</a>
 
 ### 1. 安装应用
 
