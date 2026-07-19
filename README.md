@@ -20,7 +20,10 @@ BandOTP（应用名：腕码）是一个运行在小米手表上的 TOTP（Time-
 项目基于 [Xiaomi Vela 快应用](https://iot.mi.com/vela/quickapp) 开发，当前包名为 `asia.bilibili.mfa`，最低平台版本为 `1000`。
 
 > 本仓库仅包含手表端快应用。安卓端负责管理 MFA Secret 并向手表同步配置，不包含在本项目中。
-
+<p align="center">
+  <img src="docs/preview1.png" width="100" alt="preview">
+  <img src="docs/preview2.png" width="100" alt="preview">
+</p>
 ## 功能
 
 - 本地生成基于 SHA-1 的 TOTP 动态验证码。
