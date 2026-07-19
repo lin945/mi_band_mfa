@@ -1,6 +1,6 @@
 <template>
   <div class="page" onswipe="handleSwipe" style="background-color: {{ theme.pageBackground }}">
-    <div class="otp-card" if="{{ rawAccounts.length > 0 }}" style="background-color: {{ theme.cardBackground }}">
+    <div class="otp-card" if="{{ rawAccounts.length > 0 && ready }}" style="background-color: {{ theme.cardBackground }}">
       <div class="card-header">
         <div class="header-row">
           <text class="title" style="color: {{ theme.title }}">BandOTP</text>
@@ -53,7 +53,7 @@
       <text class="page-indicator" style="color: {{ theme.secondary }}">{{ currentIndex + 1 }} / {{ currentAccounts.length }}</text>
     </div>
 
-    <div class="empty-card" if="{{ rawAccounts.length === 0 }}" style="background-color: {{ theme.cardBackground }}">
+    <div class="empty-card" if="{{ rawAccounts.length === 0 && ready }}" style="background-color: {{ theme.cardBackground }}">
       <div class="header-row">
         <text class="title" style="color: {{ theme.title }}">BandOTP</text>
         <div class="menu-button" onclick="openMenu" style="background-color: {{ theme.buttonBackground }}">
@@ -137,6 +137,7 @@ export default {
     progressColor: "#0F8C6C",
     nextProgressColor: "#0F8C6C",
     layoutMode: "1",
+    ready: false,
     isDarkMode: false,
     themeAction: "夜间",
     theme: LIGHT_THEME,
@@ -172,10 +173,12 @@ export default {
       default: "1",
       success: data => {
         this.layoutMode = data || "1"
+        this.ready = true
         this.loadCategoryForShow()
       },
       fail: () => {
         this.layoutMode = "1"
+        this.ready = true
         this.loadCategoryForShow()
       }
     })
